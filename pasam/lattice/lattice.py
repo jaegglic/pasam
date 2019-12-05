@@ -5,9 +5,9 @@ Classes
 -------
     - :class:`LatticeMap`: (`abstract`) Parent type definition for the
       lattice map factory :class:`LatticeMapFactory`
-    - class:`LatticeMapFactory`: Factory of lattice maps
-    - class:`LatticeMap2D`: Lattice map in TWO dimensions (x, y)
-    - class:`LatticeMap3D`: Lattice map in THREE dimensions (x, y, z)
+    - :class:`LatticeMapFactory`: Factory of lattice maps
+    - :class:`LatticeMap2D`: Lattice map in TWO dimensions (x, y)
+    - :class:`LatticeMap3D`: Lattice map in THREE dimensions (x, y, z)
 
 Methods
 -------
@@ -42,7 +42,8 @@ class LatticeMap(abc.ABC):
     Note:
         Each (explicit) subclass of `LatticeMap` must provide implementation(s)
         of:
-            - :meth:`ndim`
+
+        - :meth:`ndim`
     """
 
     @property
