@@ -6,7 +6,10 @@ The API Documentation of the package
 :mod:`pasam`
 
 PaSam
------
-.. automodule:: pasam.trial
+=====
+
+Lattice
+-------
+.. automodule:: pasam.lattice.lattice
    :members:
 
