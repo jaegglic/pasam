@@ -8,5 +8,6 @@
 sphinx >= 2.2.2
 sphinx_rtd_theme >= 0.4.3
 
-numpy >= 1.17.4
-pyparsing >= 2.4.5
+# Numpy > 1.15.4 does not work with CI (on travis we get the error message:
+#     RuntimeError: implement_array_function method already has a docstring
+numpy == 1.15.4
