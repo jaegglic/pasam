@@ -1,15 +1,13 @@
-API of PaSam Package
-********************
+========================
+API of the PaSam Package
+========================
 
-The API Documentation of the package
+The :mod:`pasam` package is organized into the following sup-packages
+* :ref:`lattice_reference`: Defines the computational grid and the associate map
 
-:mod:`pasam`
-
-PaSam
-=====
 
 Lattice
--------
+=======
 .. automodule:: pasam.lattice.lattice
    :members:
 
