@@ -59,7 +59,12 @@ class Lattice(abc.ABC):
         return f'{cls_name}(nodes={nodes_repr})'
 
     def __str__(self):
-        return self.__repr__()
+        nindent = 13
+        nodes_repr = _rlib.repr(self._nodes)
+        return f'{"nodes":<{nindent}} =  {nodes_repr}\n' \
+               f'{"ndim":<{nindent}} =  {self.ndim}\n' \
+               f'{"nnodes_dim":<{nindent}} =  {self.nnodes_dim}\n' \
+               f'{"nnodes":<{nindent}} =  {self.nnodes}'
 
     @property
     @abc.abstractmethod
@@ -70,6 +75,7 @@ class Lattice(abc.ABC):
             int: Dimensionality of the lattice.
         """
 
+    @property
     def nnodes_dim(self):
         """The total number of nodes in the lattice.
 
@@ -78,19 +84,21 @@ class Lattice(abc.ABC):
         """
         return tuple(len(n) for n in self._nodes)
 
+    @property
     def nnodes(self):
         """The total number of nodes in the lattice.
 
         Returns:
             int: Total number of nodes.
         """
-        return int(np.prod(self.nnodes_dim()))
+        return int(np.prod(self.nnodes_dim))
 
 
 # TODO make LatticeFactory abstract
 class LatticeFactory:
     """`LatticeFactory` produces two and three dimensional lattice objects.
     """
+
     @staticmethod
     def make_lattice(nodes):
         """Produces two and three dimensional lattice objects.
@@ -164,17 +172,22 @@ class Lattice3D(Lattice):
 
 
 if __name__ == '__main__':
-    x = [1, 2, 3, 4]
-    y = [4, 5]
+    x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    y = [4, 5, 6, 7, 8, 9, 10.5]
     z = [-1, 0, 1]
 
     lattice_factory = LatticeFactory()
 
     lattice_2D = lattice_factory.make_lattice((x, y))
-    print(f'__repr__ of 2D lattice:  {lattice_2D}')
-    print(f'__str__ of 2D lattice:   {str(lattice_2D)}')
+    print('\n__repr__ of 2D lattice:')
+    print(repr(lattice_2D))
+    print('\n__str__ of 2D lattice:')
+    print(str(lattice_2D))
 
     lattice_3D = lattice_factory.make_lattice((x, y, z))
-    print(f'__repr__ of 3D lattice:  {lattice_3D}')
-    print(f'__str__ of 3D lattice:   {str(lattice_3D)}')
+    print('\n__repr__ of 3D lattice:')
+    print(repr(lattice_3D))
+    print('\n__str__ of 3D lattice:')
+    print(str(lattice_3D))
+
 
