@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'pasam'
-copyright = '2019, Stefanie Marti, Christoph Jaeggli'
+copyright = '2020, Stefanie Marti, Christoph Jaeggli'
 author = 'Stefanie Marti, Christoph Jaeggli'
 
 # The full version, including alpha/beta/rc tags
