@@ -46,6 +46,12 @@ class LatticeMap(abc.ABC):
         - :meth:`ndim`
     """
 
+    def __repr__(self):
+        return f'{self.ndim}'
+
+    def __str__(self):
+        return self.__repr__()
+
     @property
     @abc.abstractmethod
     def ndim(self):
