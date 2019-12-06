@@ -27,8 +27,6 @@ Methods
 # Standard library
 import abc
 import reprlib
-import math
-# import warnings
 # Third party requirements
 import numpy as np
 # Local imports
