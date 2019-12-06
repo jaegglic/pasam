@@ -27,6 +27,7 @@ Methods
 # Standard library
 import abc
 import reprlib
+import math
 # import warnings
 # Third party requirements
 import numpy as np
@@ -50,8 +51,14 @@ class Lattice(abc.ABC):
         - :meth:`ndim`
     """
 
+    def __init__(self, nodes):
+        self._nodes = tuple(np.asarray(n).ravel() for n in nodes)
+
     def __repr__(self):
-        return f'{self.ndim}'
+        cls_name = type(self).__name__
+        nodes_repr = _rlib.repr(self._nodes)
+
+        return f'{cls_name}(nodes={nodes_repr})'
 
     def __str__(self):
         return self.__repr__()
@@ -59,27 +66,52 @@ class Lattice(abc.ABC):
     @property
     @abc.abstractmethod
     def ndim(self):
-        """ The number of dimensions for the lattice.
+        """The number of dimensions for the lattice.
 
         Returns:
             int: Dimensionality of the lattice.
         """
 
+    def nnodes_dim(self):
+        """The total number of nodes in the lattice.
+
+        Returns:
+            tuple: Total number of nodes in each dimension.
+        """
+        return tuple(len(n) for n in self._nodes)
+
+    def nnodes(self):
+        """The total number of nodes in the lattice.
+
+        Returns:
+            int: Total number of nodes.
+        """
+        return int(np.prod(self.nnodes_dim()))
+
 
 # TODO make LatticeFactory abstract
 class LatticeFactory:
-    """`LatticeFactory` produces a lattice object.
-
-    This class defines the factory used to construct lattice objects. If only
-    `x` and `y` are provided, it will produce a two dimensional lattice, while
-    in the case where `z` is defined, it returns a three dimensional lattice.
-
-    Args:
-        x (array_like): Tensor product nodes in x-direction
-        y (array_like): Tensor product nodes in x-direction
-        z (array_like, optional): Tensor product nodes in x-direction
+    """`LatticeFactory` produces two and three dimensional lattice objects.
     """
-    pass
+    @staticmethod
+    def make_lattice(nodes):
+        """Produces two and three dimensional lattice objects.
+
+        If only `x` and `y` are provided, it will produce a two dimensional
+        lattice, while in the case where `z` is defined, it returns a three
+        dimensional lattice.
+
+        Args:
+            nodes (tuple): Tensor product nodes ((x, y) or (x, y, z) of
+                array_like x, y, and z)
+        """
+        if len(nodes) == 2:
+            return Lattice2D(nodes)
+        elif len(nodes) == 3:
+            return Lattice3D(nodes)
+        else:
+            raise ValueError(f'Length of tensor product nodes must either be 2'
+                             f' or 3 (the actual length is {len(nodes)})')
 
 
 class Lattice2D(Lattice):
@@ -89,22 +121,16 @@ class Lattice2D(Lattice):
     for any regular, two-dimensional tensor product lattice.
 
     Args:
-        x (array_like): Tensor product nodes in x-direction
-        y (array_like): Tensor product nodes in x-direction
+        nodes (tuple): Tensor product nodes (x, y)
     """
     _NDIM = 2
 
-    def __init__(self, x, y):
+    def __init__(self, nodes):
+        x, y = nodes
         self._x = np.asarray(x).ravel()
         self._y = np.asarray(y).ravel()
 
-    def __repr__(self):
-        cls_name = type(self).__name__
-
-        x_repr = _rlib.repr(self._x)
-        y_repr = _rlib.repr(self._y)
-
-        return f'{cls_name}(x={x_repr}, y={y_repr})'
+        super().__init__((self._x, self._y))
 
     @property
     def ndim(self):
@@ -118,8 +144,19 @@ class Lattice3D(Lattice):
 
     This class inherits from the abstract class :class:`Lattice` and is used
     for any associated to a regular lattice of three-dimensional nodes.
+
+    Args:
+        nodes (tuple): Tensor product nodes (x, y, z)
     """
     _NDIM = 3
+
+    def __init__(self, nodes):
+        x, y, z = nodes
+        self._x = np.asarray(x).ravel()
+        self._y = np.asarray(y).ravel()
+        self._z = np.asarray(z).ravel()
+
+        super().__init__((self._x, self._y, self._z))
 
     @property
     def ndim(self):
@@ -129,12 +166,17 @@ class Lattice3D(Lattice):
 
 
 if __name__ == '__main__':
-    x = [1, 2, 3, 4.5, 5, 8]
-    y = [-1.5, -1, 0, 5.76]
-    # z = [-100, 50, 199998.2]
+    x = [1, 2, 3, 4]
+    y = [4, 5]
+    z = [-1, 0, 1]
 
-    lattice_2D = Lattice2D(x, y)
+    lattice_factory = LatticeFactory()
 
+    lattice_2D = lattice_factory.make_lattice((x, y))
     print(f'__repr__ of 2D lattice:  {lattice_2D}')
     print(f'__str__ of 2D lattice:   {str(lattice_2D)}')
+
+    lattice_3D = lattice_factory.make_lattice((x, y, z))
+    print(f'__repr__ of 3D lattice:  {lattice_3D}')
+    print(f'__str__ of 3D lattice:   {str(lattice_3D)}')
 

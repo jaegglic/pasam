@@ -9,19 +9,22 @@ Unit tests for the Lattice* classes in `pasam.lattice.lattice.py`.
 import unittest
 # Third party requirements
 # Local imports
-from pasam.lattice import Lattice2D, Lattice3D
+from pasam.lattice import LatticeFactory
 
 
 class TestLattice(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.x = [1, 2, 3, 4.5, 5, 8]
+        self.y = [-1.5, -1, 0, 5.76]
+        self.z = [-100.1, -1, 1998.5]
+
+        self.lat_fact = LatticeFactory()
 
     def test_Lattice2D(self):
         ndim = 2
-        x = [1, 2, 3, 4.5, 5, 8]
-        y = [-1.5, -1, 0, 5.76]
-        lattice = Lattice2D(x, y)
+        nodes = self.x, self.y
+        lattice = self.lat_fact.make_lattice(nodes)
 
         self.assertTrue(hasattr(lattice, 'ndim'))
         self.assertEqual(lattice.ndim, ndim)
@@ -34,7 +37,8 @@ class TestLattice(unittest.TestCase):
 
     def test_Lattice3D(self):
         ndim = 3
-        lattice = Lattice3D()
+        nodes = self.x, self.y, self.z
+        lattice = self.lat_fact.make_lattice(nodes)
 
         self.assertTrue(hasattr(lattice, 'ndim'))
         self.assertEqual(lattice.ndim, ndim)
