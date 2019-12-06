@@ -2,26 +2,26 @@
 # -*- coding: utf-8 -*-
 """UNIT TEST FILE
 
-Unit tests for the LatticeMap* classes in `pasam.lattice.lattice.py`.
+Unit tests for the Lattice* classes in `pasam.lattice.lattice.py`.
 """
 
 # Standard library
 import unittest
 # Third party requirements
 # Local imports
-from pasam.lattice import LatticeMap2D, LatticeMap3D
+from pasam.lattice import Lattice2D, Lattice3D
 
 
-class TestLatticeMap(unittest.TestCase):
+class TestLattice(unittest.TestCase):
 
     def setUp(self):
         pass
 
-    def test_LatticeMap2D(self):
+    def test_Lattice2D(self):
         ndim = 2
         x = [1, 2, 3, 4.5, 5, 8]
         y = [-1.5, -1, 0, 5.76]
-        lattice = LatticeMap2D(x, y)
+        lattice = Lattice2D(x, y)
 
         self.assertTrue(hasattr(lattice, 'ndim'))
         self.assertEqual(lattice.ndim, ndim)
@@ -32,9 +32,9 @@ class TestLatticeMap(unittest.TestCase):
         self.assertTrue(hasattr(lattice, '__str__'))
         self.assertTrue(lattice.__str__())
 
-    def test_LatticeMap3D(self):
+    def test_Lattice3D(self):
         ndim = 3
-        lattice = LatticeMap3D()
+        lattice = Lattice3D()
 
         self.assertTrue(hasattr(lattice, 'ndim'))
         self.assertEqual(lattice.ndim, ndim)

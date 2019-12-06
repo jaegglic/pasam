@@ -3,11 +3,11 @@
 
 Classes
 -------
-    - :class:`LatticeMap`: (`abstract`) Parent type definition for the
-      lattice map factory :class:`LatticeMapFactory`
-    - :class:`LatticeMapFactory`: Factory of lattice maps
-    - :class:`LatticeMap2D`: Lattice map in two dimensions (x, y)
-    - :class:`LatticeMap3D`: Lattice map in three dimensions (x, y, z)
+    - :class:`Lattice`: (`abstract`) Parent type definition for the lattice
+      factory :class:`LatticeFactory`
+    - :class:`LatticeFactory`: Factory of lattices
+    - :class:`Lattice2D`: Lattice in two dimensions (x, y)
+    - :class:`Lattice3D`: Lattice in three dimensions (x, y, z)
 
 Methods
 -------
@@ -38,15 +38,13 @@ _rlib = reprlib.Repr()
 _rlib.maxlist = _RLIB_MAXLIST
 
 
-class LatticeMap(abc.ABC):
-    """`LatticeMap` defines an abstract parent class for the lattice map
-    factory.
+class Lattice(abc.ABC):
+    """`Lattice` defines an abstract parent class for the lattice factory.
 
-    A lattice map is defined by a two- or three-dimensional regular grid of
-    nodes. Each node is associated to a real value (the map).
+    A lattice is defined by a two- or three-dimensional regular grid of nodes.
 
     Note:
-        Each (explicit) subclass of `LatticeMap` must provide implementation(s)
+        Each (explicit) subclass of `Lattice` must provide implementation(s)
         of:
 
         - :meth:`ndim`
@@ -68,14 +66,13 @@ class LatticeMap(abc.ABC):
         """
 
 
-# TODO make LatticeMapFactory abstract
-class LatticeMapFactory:
-    """`LatticeMapFactory` produces a lattice map object.
+# TODO make LatticeFactory abstract
+class LatticeFactory:
+    """`LatticeFactory` produces a lattice object.
 
-    This class defines the factory used to construct lattice map objects. If
-    only `x` and `y` are passed as input arguments, it will produce a two
-    dimensional lattice map, while in the case where `z` is given, it returns
-    a three dimensional lattice map.
+    This class defines the factory used to construct lattice objects. If only
+    `x` and `y` are provided, it will produce a two dimensional lattice, while
+    in the case where `z` is defined, it returns a three dimensional lattice.
 
     Args:
         x (array_like): Tensor product nodes in x-direction
@@ -85,16 +82,15 @@ class LatticeMapFactory:
     pass
 
 
-class LatticeMap2D(LatticeMap):
-    """`LatticeMap2D` defines a two-dimensional lattice map.
+class Lattice2D(Lattice):
+    """`Lattice2D` defines a two-dimensional lattice.
 
-    This type inherits from the abstract class :class:`LatticeMap` and is used
-    for any map associated to a regular lattice of two-dimensional nodes.
+    This class inherits from the abstract class :class:`Lattice` and is used
+    for any regular, two-dimensional tensor product lattice.
 
     Args:
         x (array_like): Tensor product nodes in x-direction
         y (array_like): Tensor product nodes in x-direction
-        z (array_like, optional): Tensor product nodes in x-direction
     """
     _NDIM = 2
 
@@ -112,22 +108,22 @@ class LatticeMap2D(LatticeMap):
 
     @property
     def ndim(self):
-        """ Dimensionality of the `LatticeMap2D` (=2).
+        """ Dimensionality of the `Lattice2D`.
         """
         return self._NDIM
 
 
-class LatticeMap3D(LatticeMap):
-    """`LatticeMap3D` defines a three-dimensional lattice map.
+class Lattice3D(Lattice):
+    """`Lattice3D` defines a three-dimensional lattice.
 
-    This class inherits from the abstract class :class:`LatticeMap` and is used
-    for any map associated to a regular lattice of three-dimensional nodes.
+    This class inherits from the abstract class :class:`Lattice` and is used
+    for any associated to a regular lattice of three-dimensional nodes.
     """
     _NDIM = 3
 
     @property
     def ndim(self):
-        """ Dimensionality of the `LatticeMap3D` (=3).
+        """ Dimensionality of the `Lattice3D`.
         """
         return self._NDIM
 
@@ -137,7 +133,7 @@ if __name__ == '__main__':
     y = [-1.5, -1, 0, 5.76]
     # z = [-100, 50, 199998.2]
 
-    lattice_2D = LatticeMap2D(x, y)
+    lattice_2D = Lattice2D(x, y)
 
     print(f'__repr__ of 2D lattice:  {lattice_2D}')
     print(f'__str__ of 2D lattice:   {str(lattice_2D)}')
