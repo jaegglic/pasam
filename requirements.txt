@@ -1,1 +1,11 @@
+
+
+# The manual installation of packages behind a proxy in windows can be done by
+# the following command:
+#
+#    pip --proxy http://<user>:<pw>@<domain>:<port> install <package>
+
 sphinx >= 2.2.2
+sphinx_rtd_theme >= 0.4.3
+
+numpy >= 1.17.4

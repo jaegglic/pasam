@@ -19,29 +19,31 @@ class TestLatticeMap(unittest.TestCase):
 
     def test_LatticeMap2D(self):
         ndim = 2
-        lattice_map = LatticeMap2D()
+        x = [1, 2, 3, 4.5, 5, 8]
+        y = [-1.5, -1, 0, 5.76]
+        lattice = LatticeMap2D(x, y)
 
-        self.assertTrue(hasattr(lattice_map, 'ndim'))
-        self.assertEqual(lattice_map.ndim, ndim)
+        self.assertTrue(hasattr(lattice, 'ndim'))
+        self.assertEqual(lattice.ndim, ndim)
 
         # Force the implementation of __repr__() and __str__()
-        self.assertTrue(hasattr(lattice_map, '__repr__'))
-        self.assertTrue(lattice_map.__repr__())
-        self.assertTrue(hasattr(lattice_map, '__str__'))
-        self.assertTrue(lattice_map.__str__())
+        self.assertTrue(hasattr(lattice, '__repr__'))
+        self.assertTrue(lattice.__repr__())
+        self.assertTrue(hasattr(lattice, '__str__'))
+        self.assertTrue(lattice.__str__())
 
     def test_LatticeMap3D(self):
         ndim = 3
-        lattice_map = LatticeMap3D()
+        lattice = LatticeMap3D()
 
-        self.assertTrue(hasattr(lattice_map, 'ndim'))
-        self.assertEqual(lattice_map.ndim, ndim)
+        self.assertTrue(hasattr(lattice, 'ndim'))
+        self.assertEqual(lattice.ndim, ndim)
 
         # Force the implementation of __repr__() and __str__()
-        self.assertTrue(hasattr(lattice_map, '__repr__'))
-        self.assertTrue(lattice_map.__repr__())
-        self.assertTrue(hasattr(lattice_map, '__str__'))
-        self.assertTrue(lattice_map.__str__())
+        self.assertTrue(hasattr(lattice, '__repr__'))
+        self.assertTrue(lattice.__repr__())
+        self.assertTrue(hasattr(lattice, '__str__'))
+        self.assertTrue(lattice.__str__())
 
 
 if __name__ == '__main__':
