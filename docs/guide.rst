@@ -11,11 +11,13 @@ Lattice
 The following description is dedicated to uniform lattices in two- and three-
 dimensions and the real valued maps that can be associated with. A *grid* (or
 a *lattice*) is defined to be a tensor product of spacial distributed points
+
 .. math::
 
    (x_1, \dots, x_n), (y_1, \dots, y_m)
 
 in two dimensions and
+
 .. math::
 
    (x_1, \dots, x_n), (y_1, \dots, y_m), (z_1, \dots, z_r)
