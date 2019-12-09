@@ -136,10 +136,11 @@ class Lattice2D(Lattice):
         nodes (tuple): Tensor product nodes (x, y)
 
     Examples:
-        >>> import pasam
+        >>> import pasam as ps
         >>> nodes = ([1, 2], [8, 9, 10.5])
-        >>> pasam.LatticeFactory().make_lattice(nodes)
-        Lattice2D(nodes=(array([ 1,  2]), array([ 8.,  9., 10.5])))
+        >>> lfact = ps.LatticeFactory()
+        >>> lfact.make_lattice(nodes)
+        Lattice2D(nodes=(array([1, 2]), array([ 8. ,  9. , 10.5])))
     """
     _NDIM = 2
 
@@ -167,9 +168,10 @@ class Lattice3D(Lattice):
         nodes (tuple): Tensor product nodes (x, y, z)
 
     Examples:
-        >>> import pasam
+        >>> import pasam as ps
         >>> nodes = ([1, 2], [8, 9, 10.5], [-1, 0, 1])
-        >>> pasam.LatticeFactory().make_lattice(nodes)
+        >>> lfact = ps.LatticeFactory()
+        >>> lfact.make_lattice(nodes)
         Lattice3D(nodes=(array([1, 2]), array([ 8. ,  9. , 10.5]), array([-1,  0,  1])))
     """
     _NDIM = 3
