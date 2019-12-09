@@ -137,9 +137,9 @@ class Lattice2D(Lattice):
 
     Examples:
         >>> import pasam
-        >>> nodes = ([1, 2, 3, 4, 5], [8, 9, 10.5])
+        >>> nodes = ([1, 2], [8, 9, 10.5])
         >>> pasam.LatticeFactory().make_lattice(nodes)
-        Lattice2D(nodes=(array([ 1,  2, 3, 4, 5]), array([ 8.,  9., 10.5])))
+        Lattice2D(nodes=(array([ 1,  2]), array([ 8.,  9., 10.5])))
     """
     _NDIM = 2
 
@@ -168,9 +168,9 @@ class Lattice3D(Lattice):
 
     Examples:
         >>> import pasam
-        >>> nodes = ([1, 2, 3, 4, 5], [8, 9, 10.5], [-1, 0, 1])
+        >>> nodes = ([1, 2], [8, 9, 10.5], [-1, 0, 1])
         >>> pasam.LatticeFactory().make_lattice(nodes)
-        Lattice3D(nodes=(array([1, 2, 3, 4, 5]), array([ 8. ,  9. , 10.5]), array([-1,  0,  1])))
+        Lattice3D(nodes=(array([1, 2]), array([ 8. ,  9. , 10.5]), array([-1,  0,  1])))
     """
     _NDIM = 3
 
