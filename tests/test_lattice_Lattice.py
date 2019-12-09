@@ -16,9 +16,11 @@ from pasam.lattice import LatticeFactory
 class TestLattice(unittest.TestCase):
 
     def setUp(self):
-        self.x = [1, 2, 3, 4.5, 5, 8]
+        self.x = [[1, 2, 3], [4.5, 5, 8]]
         self.y = [-1.5, -1, 0, 5.76]
         self.z = [-100.1, -1, 1998.5]
+        self.x_short = [1, 2, 3, 4.5, 5]
+        self.x_non_eq = [5, 5, 5, 5, 5, 5]
 
         self.lat_fact = LatticeFactory()
 
@@ -39,9 +41,25 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(lattice.__str__())
 
         # Test ndim and nnodes* functions
+        self.assertTrue(isinstance(lattice.ndim, int))
         self.assertEqual(lattice.ndim, ndim)
+        self.assertTrue(isinstance(lattice.nnodes_dim, tuple))
+        self.assertEqual(len(lattice.nnodes_dim), ndim)
         self.assertEqual(lattice.nnodes_dim, nnodes_dim)
+        self.assertTrue(isinstance(lattice.nnodes, int))
         self.assertEqual(lattice.nnodes, nnodes)
+
+        # Test equality
+        lattice_is = lattice
+        lattice_eq = self.lat_fact.make_lattice(nodes)
+        lattice_non_eq = self.lat_fact.make_lattice((self.x_non_eq, self.y))
+        lattice_short = self.lat_fact.make_lattice((self.x_short, self.y))
+        self.assertTrue(lattice is lattice_is)
+        self.assertTrue(lattice == lattice_eq)
+        self.assertEqual(lattice, lattice_eq)
+        self.assertFalse(lattice is lattice_eq)
+        self.assertFalse(lattice == lattice_non_eq)
+        self.assertFalse(lattice == lattice_short)
 
     def test_Lattice3D(self):
         ndim = 3
@@ -57,9 +75,25 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(lattice.__str__())
 
         # Test ndim and nnodes* functions
+        self.assertTrue(isinstance(lattice.ndim, int))
         self.assertEqual(lattice.ndim, ndim)
+        self.assertTrue(isinstance(lattice.nnodes_dim, tuple))
+        self.assertEqual(len(lattice.nnodes_dim), ndim)
         self.assertEqual(lattice.nnodes_dim, nnodes_dim)
+        self.assertTrue(isinstance(lattice.nnodes, int))
         self.assertEqual(lattice.nnodes, nnodes)
+
+        # Test equality
+        lattice_is = lattice
+        lattice_eq = self.lat_fact.make_lattice(nodes)
+        lattice_non_eq = self.lat_fact.make_lattice((self.x_non_eq, self.y, self.z))
+        lattice_short = self.lat_fact.make_lattice((self.x_short, self.y, self.z))
+        self.assertTrue(lattice is lattice_is)
+        self.assertTrue(lattice == lattice_eq)
+        self.assertEqual(lattice, lattice_eq)
+        self.assertFalse(lattice is lattice_eq)
+        self.assertFalse(lattice == lattice_non_eq)
+        self.assertFalse(lattice == lattice_short)
 
 
 if __name__ == '__main__':

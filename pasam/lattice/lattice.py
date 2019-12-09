@@ -52,10 +52,16 @@ class Lattice(abc.ABC):
     def __init__(self, nodes):
         self._nodes = tuple(np.asarray(n).ravel() for n in nodes)
 
+    def __eq__(self, other):
+        if isinstance(other, Lattice) and self.nnodes_dim == other.nnodes_dim:
+            nodes_eq = [np.all(n_sel == n_oth)
+                        for n_sel, n_oth in zip(self._nodes, other._nodes)]
+            return all(nodes_eq)
+        return False
+
     def __repr__(self):
         cls_name = type(self).__name__
         nodes_repr = _rlib.repr(self._nodes)
-
         return f'{cls_name}(nodes={nodes_repr})'
 
     def __str__(self):
@@ -65,6 +71,7 @@ class Lattice(abc.ABC):
                f'{"ndim":<{nindent}} =  {self.ndim}\n' \
                f'{"nnodes_dim":<{nindent}} =  {self.nnodes_dim}\n' \
                f'{"nnodes":<{nindent}} =  {self.nnodes}'
+
 
     @property
     @abc.abstractmethod
