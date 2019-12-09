@@ -9,6 +9,6 @@ The :mod:`pasam` package is organized into the following sup-packages
 
 Lattice
 =======
-.. automodule:: pasam.lattice.lattice
+.. automodule:: pasam.lattice
    :members:
 

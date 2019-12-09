@@ -1,8 +1,8 @@
 ================================
 User Guide of the PaSam Package
 ================================
-Let us provide some examples and (hopefully) some helpful guidance for the
-usage of the sub-packages :ref:`lattice_reference`, **TODO**
+Let us provide some examples and some guidance for the usage of the sub-modules
+:ref:`lattice_reference`, **TODO**
 
 .. _lattice_reference:
 
