@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """UNIT TEST FILE
 
-Unit tests for the Lattice* classes in `pasam.lattice.lattice.py`.
+Unit tests for the Lattice* classes in `pasam.lattice.py`.
 """
 
 # Standard library
@@ -94,6 +94,10 @@ class TestLattice(unittest.TestCase):
         self.assertFalse(lattice is lattice_eq)
         self.assertFalse(lattice == lattice_non_eq)
         self.assertFalse(lattice == lattice_short)
+
+    def test_LatticeMap2D(self):
+        nodes = self.x, self.y
+        lattice = self.lat_fact.make_lattice(nodes)
 
 
 if __name__ == '__main__':
