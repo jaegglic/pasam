@@ -212,7 +212,7 @@ class LatticeMap(abc.ABC):
         if lattice.nnodes != len(map_vals):
             raise ValueError(f'Uncomparable lattice (nnodes = '
                              f'{lattice.nnodes}) with map values '
-                             f'(len={len(map_vals)})')
+                             f'(nval={len(map_vals)})')
 
         self._lattice = lattice
         self.map_vals = np.asarray(map_vals).ravel()
@@ -233,7 +233,7 @@ class LatticeMapFactory:
     """
 
     @staticmethod
-    def make_lattice_map(lattice, map_vals):
+    def make_latticemap(lattice, map_vals):
         """ Produces two and tree dimensional lattice map objects.
 
         Args:
