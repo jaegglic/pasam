@@ -191,6 +191,33 @@ class Lattice3D(Lattice):
         return self._NDIM
 
 
+class LatticeMap(abc.ABC):
+    """`LatticeMap` defines an abstract parent class for any map of real values
+     that is associated to a lattice.
+
+     Args:
+
+
+    Note:
+        Each (explicit) subclass of `Lattice` must provide implementation(s)
+        of:
+
+        - :meth:`ndim`
+        """
+    def __init__(self, map_val):
+        self._map_val = np.asarray(map_val).ravel()
+
+
+class LatticeMapFactory:
+    """`LatticeMapFactory` produces two and three dimensional lattice map
+    objects.
+    """
+
+    @staticmethod
+    def make_lattice_map(lattice, map_val):
+        pass
+
+
 if __name__ == '__main__':
     x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     y = [4, 5, 6, 7, 8, 9, 10.5]
