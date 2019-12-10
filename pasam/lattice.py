@@ -116,6 +116,9 @@ class LatticeFactory:
         Args:
             nodes (tuple): Tensor product nodes ((x, y) or (x, y, z) of
                 array_like x, y, and z)
+
+        Returns:
+            Lattice: Object defining a lattice
         """
         if len(nodes) == 2:
             return Lattice2D(nodes)
@@ -193,19 +196,35 @@ class Lattice3D(Lattice):
 
 class LatticeMap(abc.ABC):
     """`LatticeMap` defines an abstract parent class for any map of real values
-     that is associated to a lattice.
+    that is associated to a lattice.
 
-     Args:
+    Args:
+        lattice (Lattice): Object defining a lattice
+        map_vals (array_like, shape=(n,)): Map values associated to the lattice
+            nodes
 
+    Attributes:
+        map_vals (ndarray, shape=(n,)): Map values associated to the lattice
+            nodes
+    """
 
-    Note:
-        Each (explicit) subclass of `Lattice` must provide implementation(s)
-        of:
+    def __init__(self, lattice, map_vals):
+        if lattice.nnodes != len(map_vals):
+            raise ValueError(f'Uncomparable lattice (nnodes = '
+                             f'{lattice.nnodes}) with map values '
+                             f'(nval={len(map_vals)})')
 
-        - :meth:`ndim`
+        self._lattice = lattice
+        self.map_vals = np.asarray(map_vals).ravel()
+
+    @property
+    def ndim(self):
+        """The number of dimensions for the lattic map.
+
+        Returns:
+            int: Dimensionality of the lattice map.
         """
-    def __init__(self, map_val):
-        self._map_val = np.asarray(map_val).ravel()
+        return self._lattice.ndim
 
 
 class LatticeMapFactory:
@@ -214,8 +233,47 @@ class LatticeMapFactory:
     """
 
     @staticmethod
-    def make_lattice_map(lattice, map_val):
-        pass
+    def make_latticemap(lattice, map_vals):
+        """ Produces two and tree dimensional lattice map objects.
+
+        Args:
+            lattice (Lattice): Object defining a lattice
+            map_vals (array_like, shape=(n,)): Map values associated to the
+                lattice nodes
+
+        Returns:
+            LatticeMap: Object defining a lattice map
+        """
+        ndim = lattice.ndim
+        if ndim == 2:
+            return LatticeMap2D(lattice, map_vals)
+        elif ndim == 3:
+            return LatticeMap3D(lattice, map_vals)
+        else:
+            raise ValueError(f'LatticeMap can not be generated for a lattice'
+                             f'of dimentions {ndim}')
+
+
+class LatticeMap2D(LatticeMap):
+    """`LatticeMap2D` defines a two-dimensional lattice map.
+
+    `LatticeMap2D` inhertis form :class:`LatticeMap` where the class behaviour
+    is documented in detail.
+    """
+
+    def __init__(self, lattice, map_vals):
+        super().__init__(lattice, map_vals)
+
+
+class LatticeMap3D(LatticeMap):
+    """`LatticeMap*D` defines a three-dimensional lattice map.
+
+    `LatticeMap3D` inhertis form :class:`LatticeMap` where the class behaviour
+    is documented in detail.
+    """
+
+    def __init__(self, lattice, map_vals):
+        super().__init__(lattice, map_vals)
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """UNIT TEST FILE
 
-Unit tests for the Lattice* classes in `pasam.lattice.lattice.py`.
+Unit tests for the Lattice* classes in `pasam.lattice.py`.
 """
 
 # Standard library
@@ -10,7 +10,7 @@ import unittest
 # Third party requirements
 import numpy as np
 # Local imports
-from pasam.lattice import LatticeFactory
+from pasam.lattice import (LatticeFactory, LatticeMapFactory)
 
 
 class TestLattice(unittest.TestCase):
@@ -23,6 +23,7 @@ class TestLattice(unittest.TestCase):
         self.x_non_eq = [5, 5, 5, 5, 5, 5]
 
         self.lat_fact = LatticeFactory()
+        self.latmap_fact = LatticeMapFactory()
 
     def test_Lattice2D(self):
         ndim = 2
@@ -94,6 +95,26 @@ class TestLattice(unittest.TestCase):
         self.assertFalse(lattice is lattice_eq)
         self.assertFalse(lattice == lattice_non_eq)
         self.assertFalse(lattice == lattice_short)
+
+    def test_LatticeMap2D(self):
+        nodes = self.x, self.y
+        lattice = self.lat_fact.make_lattice(nodes)
+
+        map_vals = np.random.randn(lattice.nnodes)
+        lattice_map = self.latmap_fact.make_latticemap(lattice, map_vals)
+
+        self.assertTrue(np.all(map_vals == lattice_map.map_vals))
+        # TODO test if it throws an error for unmatching length
+
+    def test_LatticeMap3D(self):
+        nodes = self.x, self.y, self.z
+        lattice = self.lat_fact.make_lattice(nodes)
+
+        map_vals = np.random.randn(lattice.nnodes)
+        lattice_map = self.latmap_fact.make_latticemap(lattice, map_vals)
+
+        self.assertTrue(np.all(map_vals == lattice_map.map_vals))
+        # TODO test if it throws an error for unmatching length
 
 
 if __name__ == '__main__':
