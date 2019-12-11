@@ -264,6 +264,7 @@ class LatticeMap2D(LatticeMap):
     `LatticeMap2D` inhertis form :class:`LatticeMap` where the class behaviour
     is documented in detail.
     """
+    # TODO: Add doctests for LatticeMap2D
 
     def __init__(self, lattice, map_vals):
         super().__init__(lattice, map_vals)
@@ -275,6 +276,7 @@ class LatticeMap3D(LatticeMap):
     `LatticeMap3D` inhertis form :class:`LatticeMap` where the class behaviour
     is documented in detail.
     """
+    # TODO: Add doctests for LatticeMap3D
 
     def __init__(self, lattice, map_vals):
         super().__init__(lattice, map_vals)
