@@ -10,7 +10,8 @@ import unittest
 # Third party requirements
 import numpy as np
 # Local imports
-from pasam.lattice import (LatticeFactory, LatticeMapFactory)
+from pasam.lattice import (Lattice, LatticeFactory,
+                           LatticeMap, LatticeMapFactory)
 
 
 class TestLattice(unittest.TestCase):
@@ -42,6 +43,7 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(lattice.__str__())
 
         # Test ndim and nnodes* functions
+        self.assertTrue(isinstance(lattice, Lattice))
         self.assertTrue(isinstance(lattice.ndim, int))
         self.assertEqual(lattice.ndim, ndim)
         self.assertTrue(isinstance(lattice.nnodes_dim, tuple))
@@ -76,6 +78,7 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(lattice.__str__())
 
         # Test ndim and nnodes* functions
+        self.assertTrue(isinstance(lattice, Lattice))
         self.assertTrue(isinstance(lattice.ndim, int))
         self.assertEqual(lattice.ndim, ndim)
         self.assertTrue(isinstance(lattice.nnodes_dim, tuple))
@@ -101,20 +104,42 @@ class TestLattice(unittest.TestCase):
         lattice = self.lat_fact.make_lattice(nodes)
 
         map_vals = np.random.randn(lattice.nnodes)
-        lattice_map = self.latmap_fact.make_latticemap(lattice, map_vals)
+        latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
 
-        self.assertTrue(np.all(map_vals == lattice_map.map_vals))
-        # TODO test if it throws an error for unmatching length
+        # Force the implementation of __repr__() and __str__()
+        self.assertTrue(hasattr(latticemap, '__repr__'))
+        self.assertTrue(latticemap.__repr__())
+        self.assertTrue(hasattr(latticemap, '__str__'))
+        self.assertTrue(latticemap.__str__())
+
+        # Generation of LatticeMap object
+        self.assertTrue(isinstance(latticemap, LatticeMap))
+        self.assertTrue(np.all(map_vals == latticemap.map_vals))
+        with self.assertRaises(ValueError):
+            self.latmap_fact.make_latticemap(lattice, map_vals[:-1])
+        with self.assertRaises(ValueError):
+            self.latmap_fact.make_latticemap(lattice, [])
 
     def test_LatticeMap3D(self):
         nodes = self.x, self.y, self.z
         lattice = self.lat_fact.make_lattice(nodes)
 
         map_vals = np.random.randn(lattice.nnodes)
-        lattice_map = self.latmap_fact.make_latticemap(lattice, map_vals)
+        latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
 
-        self.assertTrue(np.all(map_vals == lattice_map.map_vals))
-        # TODO test if it throws an error for unmatching length
+        # Force the implementation of __repr__() and __str__()
+        self.assertTrue(hasattr(latticemap, '__repr__'))
+        self.assertTrue(latticemap.__repr__())
+        self.assertTrue(hasattr(latticemap, '__str__'))
+        self.assertTrue(latticemap.__str__())
+
+        # Generation of LatticeMap object
+        self.assertTrue(isinstance(latticemap, LatticeMap))
+        self.assertTrue(np.all(map_vals == latticemap.map_vals))
+        with self.assertRaises(ValueError):
+            self.latmap_fact.make_latticemap(lattice, map_vals[:-1])
+        with self.assertRaises(ValueError):
+            self.latmap_fact.make_latticemap(lattice, [])
 
 
 if __name__ == '__main__':
