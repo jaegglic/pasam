@@ -212,6 +212,8 @@ class LatticeMap(abc.ABC):
         self._lattice = lattice
         self.map_vals = np.asarray(map_vals).ravel()
 
+    # TODO: add __eq__ function for comparing LatticeMap
+
     def __repr__(self):
         cls_name = type(self).__name__
         map_vals_repr = _rlib.repr(self.map_vals)
