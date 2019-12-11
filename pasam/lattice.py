@@ -65,12 +65,7 @@ class Lattice(abc.ABC):
         return f'{cls_name}(nodes={nodes_repr})'
 
     def __str__(self):
-        nindent = 13
-        nodes_repr = _rlib.repr(self._nodes)
-        return f'{"nodes":<{nindent}} =  {nodes_repr}\n' \
-               f'{"ndim":<{nindent}} =  {self.ndim}\n' \
-               f'{"nnodes_dim":<{nindent}} =  {self.nnodes_dim}\n' \
-               f'{"nnodes":<{nindent}} =  {self.nnodes}'
+        return self.__repr__()
 
     @property
     @abc.abstractmethod
@@ -217,6 +212,15 @@ class LatticeMap(abc.ABC):
         self._lattice = lattice
         self.map_vals = np.asarray(map_vals).ravel()
 
+    def __repr__(self):
+        cls_name = type(self).__name__
+        map_vals_repr = _rlib.repr(self.map_vals)
+        return f'{cls_name}(lattice={repr(self._lattice)}, ' \
+               f'map_vals={map_vals_repr})'
+
+    def __str__(self):
+        return self.__repr__()
+
     @property
     def ndim(self):
         """The number of dimensions for the lattic map.
@@ -282,15 +286,22 @@ if __name__ == '__main__':
     z = [-1, 0, 1]
 
     lattice_factory = LatticeFactory()
+    latticemap_factory = LatticeMapFactory()
 
     lattice_2D = lattice_factory.make_lattice((x, y))
-    print('\n__repr__ of 2D lattice:')
+    print('\n2D lattice:')
     print(repr(lattice_2D))
-    print('\n__str__ of 2D lattice:')
-    print(str(lattice_2D))
 
     lattice_3D = lattice_factory.make_lattice((x, y, z))
-    print('\n__repr__ of 3D lattice:')
+    print('\n3D lattice:')
     print(repr(lattice_3D))
-    print('\n__str__ of 3D lattice:')
-    print(str(lattice_3D))
+
+    map_vals = np.random.randn(lattice_2D.nnodes)
+    latticemap_2D = latticemap_factory.make_latticemap(lattice_2D, map_vals)
+    print('\n2D latticemap:')
+    print(repr(latticemap_2D))
+
+    map_vals = np.random.randn(lattice_3D.nnodes)
+    latticemap_3D = latticemap_factory.make_latticemap(lattice_3D, map_vals)
+    print('\n3D latticemap:')
+    print(repr(latticemap_3D))
