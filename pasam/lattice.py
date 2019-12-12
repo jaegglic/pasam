@@ -269,8 +269,17 @@ class LatticeMap2D(LatticeMap):
 
     `LatticeMap2D` inhertis form :class:`LatticeMap` where the class behaviour
     is documented in detail.
+
+    Examples:
+        >>> import pasam as ps
+        >>> nodes = ([1, 2], [8, 9, 10])
+        >>> lfact = ps.LatticeFactory()
+        >>> lattice = lfact.make_lattice(nodes)
+        >>> map_vals = np.ones(lattice.nnodes)
+        >>> lmapfact = ps.LatticeMapFactory()
+        >>> lmapfact.make_latticemap(lattice, map_vals)
+        LatticeMap2D(lattice=Lattice2D(nodes=(array([1, 2]), array([ 8,  9, 10]))), map_vals=array([1., 1...., 1., 1., 1.]))
     """
-    # TODO: Add doctests for LatticeMap2D
 
     def __init__(self, lattice, map_vals):
         super().__init__(lattice, map_vals)
@@ -281,8 +290,16 @@ class LatticeMap3D(LatticeMap):
 
     `LatticeMap3D` inhertis form :class:`LatticeMap` where the class behaviour
     is documented in detail.
+
+        >>> import pasam as ps
+        >>> nodes = ([1, 2], [8, 9, 10], [-1, 0])
+        >>> lfact = ps.LatticeFactory()
+        >>> lattice = lfact.make_lattice(nodes)
+        >>> map_vals = np.ones(lattice.nnodes)
+        >>> lmapfact = ps.LatticeMapFactory()
+        >>> lmapfact.make_latticemap(lattice, map_vals)
+        LatticeMap3D(lattice=Lattice3D(nodes=(array([1, 2]), array([ 8,  9, 10]), array([-1,  0]))), map_vals=array([1., 1...., 1., 1., 1.]))
     """
-    # TODO: Add doctests for LatticeMap3D
 
     def __init__(self, lattice, map_vals):
         super().__init__(lattice, map_vals)
@@ -304,12 +321,12 @@ if __name__ == '__main__':
     print('\n3D lattice:')
     print(repr(lattice_3D))
 
-    map_vals = np.random.randn(lattice_2D.nnodes)
+    map_vals = np.ones(lattice_2D.nnodes)
     latticemap_2D = latticemap_factory.make_latticemap(lattice_2D, map_vals)
     print('\n2D latticemap:')
     print(repr(latticemap_2D))
 
-    map_vals = np.random.randn(lattice_3D.nnodes)
+    map_vals = np.ones(lattice_3D.nnodes)
     latticemap_3D = latticemap_factory.make_latticemap(lattice_3D, map_vals)
     print('\n3D latticemap:')
     print(repr(latticemap_3D))
