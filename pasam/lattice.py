@@ -65,12 +65,7 @@ class Lattice(abc.ABC):
         return f'{cls_name}(nodes={nodes_repr})'
 
     def __str__(self):
-        nindent = 13
-        nodes_repr = _rlib.repr(self._nodes)
-        return f'{"nodes":<{nindent}} =  {nodes_repr}\n' \
-               f'{"ndim":<{nindent}} =  {self.ndim}\n' \
-               f'{"nnodes_dim":<{nindent}} =  {self.nnodes_dim}\n' \
-               f'{"nnodes":<{nindent}} =  {self.nnodes}'
+        return self.__repr__()
 
     @property
     @abc.abstractmethod
@@ -116,6 +111,9 @@ class LatticeFactory:
         Args:
             nodes (tuple): Tensor product nodes ((x, y) or (x, y, z) of
                 array_like x, y, and z)
+
+        Returns:
+            Lattice: Object defining a lattice
         """
         if len(nodes) == 2:
             return Lattice2D(nodes)
@@ -191,21 +189,144 @@ class Lattice3D(Lattice):
         return self._NDIM
 
 
+class LatticeMap(abc.ABC):
+    """`LatticeMap` defines an abstract parent class for any map of real values
+    that is associated to a lattice.
+
+    Args:
+        lattice (Lattice): Object defining a lattice
+        map_vals (array_like, shape=(n,)): Map values associated to the lattice
+            nodes
+
+    Attributes:
+        lattice (Lattice): Object defining a lattice
+        map_vals (ndarray, shape=(n,)): Map values associated to the lattice
+            nodes
+    """
+
+    def __init__(self, lattice, map_vals):
+        if lattice.nnodes != len(map_vals):
+            raise ValueError(f'Uncomparable lattice (nnodes = '
+                             f'{lattice.nnodes}) with map values '
+                             f'(nval={len(map_vals)})')
+
+        self.lattice = lattice
+        self.map_vals = np.asarray(map_vals).ravel()
+
+    def __eq__(self, other):
+        if isinstance(other, LatticeMap) and self.lattice == other.lattice:
+            return np.all(self.map_vals == other.map_vals)
+        return False
+
+    def __repr__(self):
+        cls_name = type(self).__name__
+        map_vals_repr = _rlib.repr(self.map_vals)
+        return f'{cls_name}(lattice={repr(self.lattice)}, ' \
+               f'map_vals={map_vals_repr})'
+
+    def __str__(self):
+        return self.__repr__()
+
+    @property
+    def ndim(self):
+        """The number of dimensions for the lattic map.
+
+        Returns:
+            int: Dimensionality of the lattice map.
+        """
+        return self.lattice.ndim
+
+
+class LatticeMapFactory:
+    """`LatticeMapFactory` produces two and three dimensional lattice map
+    objects.
+    """
+
+    @staticmethod
+    def make_latticemap(lattice, map_vals):
+        """ Produces two and tree dimensional lattice map objects.
+
+        Args:
+            lattice (Lattice): Object defining a lattice
+            map_vals (array_like, shape=(n,)): Map values associated to the
+                lattice nodes
+
+        Returns:
+            LatticeMap: Object defining a lattice map
+        """
+        ndim = lattice.ndim
+        if ndim == 2:
+            return LatticeMap2D(lattice, map_vals)
+        elif ndim == 3:
+            return LatticeMap3D(lattice, map_vals)
+        else:
+            raise ValueError(f'LatticeMap can not be generated for a lattice'
+                             f'of dimentions {ndim}')
+
+
+class LatticeMap2D(LatticeMap):
+    """`LatticeMap2D` defines a two-dimensional lattice map.
+
+    `LatticeMap2D` inhertis form :class:`LatticeMap` where the class behaviour
+    is documented in detail.
+
+    Examples:
+        >>> import pasam as ps
+        >>> nodes = ([1, 2], [8, 9, 10])
+        >>> lfact = ps.LatticeFactory()
+        >>> lattice = lfact.make_lattice(nodes)
+        >>> map_vals = np.ones(lattice.nnodes)
+        >>> lmapfact = ps.LatticeMapFactory()
+        >>> lmapfact.make_latticemap(lattice, map_vals)
+        LatticeMap2D(lattice=Lattice2D(nodes=(array([1, 2]), array([ 8,  9, 10]))), map_vals=array([1., 1...., 1., 1., 1.]))
+    """
+
+    def __init__(self, lattice, map_vals):
+        super().__init__(lattice, map_vals)
+
+
+class LatticeMap3D(LatticeMap):
+    """`LatticeMap*D` defines a three-dimensional lattice map.
+
+    `LatticeMap3D` inhertis form :class:`LatticeMap` where the class behaviour
+    is documented in detail.
+
+        >>> import pasam as ps
+        >>> nodes = ([1, 2], [8, 9, 10], [-1, 0])
+        >>> lfact = ps.LatticeFactory()
+        >>> lattice = lfact.make_lattice(nodes)
+        >>> map_vals = np.ones(lattice.nnodes)
+        >>> lmapfact = ps.LatticeMapFactory()
+        >>> lmapfact.make_latticemap(lattice, map_vals)
+        LatticeMap3D(lattice=Lattice3D(nodes=(array([1, 2]), array([ 8,  9, 10]), array([-1,  0]))), map_vals=array([1., 1...., 1., 1., 1.]))
+    """
+
+    def __init__(self, lattice, map_vals):
+        super().__init__(lattice, map_vals)
+
+
 if __name__ == '__main__':
     x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     y = [4, 5, 6, 7, 8, 9, 10.5]
     z = [-1, 0, 1]
 
     lattice_factory = LatticeFactory()
+    latticemap_factory = LatticeMapFactory()
 
     lattice_2D = lattice_factory.make_lattice((x, y))
-    print('\n__repr__ of 2D lattice:')
+    print('\n2D lattice:')
     print(repr(lattice_2D))
-    print('\n__str__ of 2D lattice:')
-    print(str(lattice_2D))
 
     lattice_3D = lattice_factory.make_lattice((x, y, z))
-    print('\n__repr__ of 3D lattice:')
+    print('\n3D lattice:')
     print(repr(lattice_3D))
-    print('\n__str__ of 3D lattice:')
-    print(str(lattice_3D))
+
+    map_vals = np.ones(lattice_2D.nnodes)
+    latticemap_2D = latticemap_factory.make_latticemap(lattice_2D, map_vals)
+    print('\n2D latticemap:')
+    print(repr(latticemap_2D))
+
+    map_vals = np.ones(lattice_3D.nnodes)
+    latticemap_3D = latticemap_factory.make_latticemap(lattice_3D, map_vals)
+    print('\n3D latticemap:')
+    print(repr(latticemap_3D))

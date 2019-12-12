@@ -18,7 +18,7 @@ def test_suite():
 setup(
     name='pasam-package',
     packages=find_namespace_packages(),
-    version='0.1.0',
+    version='0.1.1',
     description='Path sampling package',
     long_description=long_description,
     long_description_content_type="text/x-rst",
@@ -36,8 +36,6 @@ setup(
         'Natural Language :: English',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
