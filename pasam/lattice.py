@@ -199,6 +199,7 @@ class LatticeMap(abc.ABC):
             nodes
 
     Attributes:
+        lattice (Lattice): Object defining a lattice
         map_vals (ndarray, shape=(n,)): Map values associated to the lattice
             nodes
     """
@@ -209,15 +210,18 @@ class LatticeMap(abc.ABC):
                              f'{lattice.nnodes}) with map values '
                              f'(nval={len(map_vals)})')
 
-        self._lattice = lattice
+        self.lattice = lattice
         self.map_vals = np.asarray(map_vals).ravel()
 
-    # TODO: add __eq__ function for comparing LatticeMap
+    def __eq__(self, other):
+        if isinstance(other, LatticeMap) and self.lattice == other.lattice:
+            return np.all(self.map_vals == other.map_vals)
+        return False
 
     def __repr__(self):
         cls_name = type(self).__name__
         map_vals_repr = _rlib.repr(self.map_vals)
-        return f'{cls_name}(lattice={repr(self._lattice)}, ' \
+        return f'{cls_name}(lattice={repr(self.lattice)}, ' \
                f'map_vals={map_vals_repr})'
 
     def __str__(self):
@@ -230,7 +234,7 @@ class LatticeMap(abc.ABC):
         Returns:
             int: Dimensionality of the lattice map.
         """
-        return self._lattice.ndim
+        return self.lattice.ndim
 
 
 class LatticeMapFactory:
