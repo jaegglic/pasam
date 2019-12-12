@@ -6,8 +6,13 @@ Classes
     - :class:`Lattice`: (`abstract`) Parent type definition for the lattice
       factory :class:`LatticeFactory`
     - :class:`LatticeFactory`: Factory of lattices
-    - :class:`Lattice2D`: Lattice in two dimensions (x, y)
-    - :class:`Lattice3D`: Lattice in three dimensions (x, y, z)
+    - :class:`Lattice2D`: Lattice in two dimensions
+    - :class:`Lattice3D`: Lattice in three dimensions
+    - :class:`LatticeMap`: (`abstract`) Parent type definition for the
+      latticemap factory :class:`LatticeMapFactory`
+    - :class:`LatticeMapFactory`: Factory of latticemaps
+    - :class:`LatticeMap2D`: Latticemap in two dimensions
+    - :class:`LatticeMap3D`: Latticemap in three dimensions
 
 Methods
 -------
@@ -286,7 +291,7 @@ class LatticeMap2D(LatticeMap):
 
 
 class LatticeMap3D(LatticeMap):
-    """`LatticeMap*D` defines a three-dimensional lattice map.
+    """`LatticeMap3D` defines a three-dimensional lattice map.
 
     `LatticeMap3D` inhertis form :class:`LatticeMap` where the class behaviour
     is documented in detail.
