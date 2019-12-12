@@ -134,20 +134,14 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(isinstance(lattice.nnodes, int))
         self.assertEqual(lattice.nnodes, nnodes)
 
-    def test_LatticeMap2D(self):
+    # Tests associated to LatticeMap2D
+    def test_LatticeMap2D_gen(self):
         nodes = self.x, self.y
         lattice = self.lat_fact.make_lattice(nodes)
 
         map_vals = np.random.randn(lattice.nnodes)
         latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
 
-        # Force the implementation of __repr__() and __str__()
-        self.assertTrue(hasattr(latticemap, '__repr__'))
-        self.assertTrue(latticemap.__repr__())
-        self.assertTrue(hasattr(latticemap, '__str__'))
-        self.assertTrue(latticemap.__str__())
-
-        # Generation of LatticeMap object
         self.assertTrue(isinstance(latticemap, LatticeMap))
         self.assertTrue(np.all(map_vals == latticemap.map_vals))
         with self.assertRaises(ValueError):
@@ -155,7 +149,90 @@ class TestLattice(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.latmap_fact.make_latticemap(lattice, [])
 
-    def test_LatticeMap3D(self):
+    def test_LatticeMap2D__eq__(self):
+        nodes = self.x, self.y
+        lattice = self.lat_fact.make_lattice(nodes)
+
+        map_vals = np.random.randn(lattice.nnodes)
+        latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
+        latticemap_is = latticemap
+        latticemap_eq = self.latmap_fact.make_latticemap(lattice, map_vals)
+        latticemap_non_eq = self.latmap_fact.make_latticemap(lattice, map_vals + 1)
+
+        self.assertTrue(latticemap is latticemap_is)
+        self.assertTrue(latticemap == latticemap_eq)
+        self.assertEqual(latticemap, latticemap_eq)
+        self.assertFalse(latticemap is latticemap_eq)
+        self.assertFalse(latticemap == latticemap_non_eq)
+
+    def test_LatticeMap2D_ndim(self):
+        ndim = 2
+        nodes = self.x, self.y
+        lattice = self.lat_fact.make_lattice(nodes)
+
+        map_vals = np.random.randn(lattice.nnodes)
+        latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
+
+        self.assertTrue(hasattr(latticemap, 'ndim'))
+        self.assertEqual(latticemap.ndim, ndim)
+        self.assertTrue(isinstance(latticemap.ndim, int))
+
+    def test_LatticeMap2D_print(self):
+        nodes = self.x, self.y
+        lattice = self.lat_fact.make_lattice(nodes)
+
+        map_vals = np.random.randn(lattice.nnodes)
+        latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
+
+        self.assertTrue(hasattr(latticemap, '__repr__'))
+        self.assertTrue(latticemap.__repr__())
+        self.assertTrue(hasattr(latticemap, '__str__'))
+        self.assertTrue(latticemap.__str__())
+
+    # Tests associated to LatticeMap3D
+    def test_LatticeMap3D_gen(self):
+        nodes = self.x, self.y, self.z
+        lattice = self.lat_fact.make_lattice(nodes)
+
+        map_vals = np.random.randn(lattice.nnodes)
+        latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
+
+        self.assertTrue(isinstance(latticemap, LatticeMap))
+        self.assertTrue(np.all(map_vals == latticemap.map_vals))
+        with self.assertRaises(ValueError):
+            self.latmap_fact.make_latticemap(lattice, map_vals[:-1])
+        with self.assertRaises(ValueError):
+            self.latmap_fact.make_latticemap(lattice, [])
+
+    def test_LatticeMap3D__eq__(self):
+        nodes = self.x, self.y, self.z
+        lattice = self.lat_fact.make_lattice(nodes)
+
+        map_vals = np.random.randn(lattice.nnodes)
+        latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
+        latticemap_is = latticemap
+        latticemap_eq = self.latmap_fact.make_latticemap(lattice, map_vals)
+        latticemap_non_eq = self.latmap_fact.make_latticemap(lattice, map_vals + 1)
+
+        self.assertTrue(latticemap is latticemap_is)
+        self.assertTrue(latticemap == latticemap_eq)
+        self.assertEqual(latticemap, latticemap_eq)
+        self.assertFalse(latticemap is latticemap_eq)
+        self.assertFalse(latticemap == latticemap_non_eq)
+
+    def test_LatticeMap3D_ndim(self):
+        ndim = 3
+        nodes = self.x, self.y, self.z
+        lattice = self.lat_fact.make_lattice(nodes)
+
+        map_vals = np.random.randn(lattice.nnodes)
+        latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
+
+        self.assertTrue(hasattr(latticemap, 'ndim'))
+        self.assertEqual(latticemap.ndim, ndim)
+        self.assertTrue(isinstance(latticemap.ndim, int))
+
+    def test_LatticeMap3D_print(self):
         nodes = self.x, self.y, self.z
         lattice = self.lat_fact.make_lattice(nodes)
 
@@ -167,14 +244,6 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(latticemap.__repr__())
         self.assertTrue(hasattr(latticemap, '__str__'))
         self.assertTrue(latticemap.__str__())
-
-        # Generation of LatticeMap object
-        self.assertTrue(isinstance(latticemap, LatticeMap))
-        self.assertTrue(np.all(map_vals == latticemap.map_vals))
-        with self.assertRaises(ValueError):
-            self.latmap_fact.make_latticemap(lattice, map_vals[:-1])
-        with self.assertRaises(ValueError):
-            self.latmap_fact.make_latticemap(lattice, [])
 
 
 if __name__ == '__main__':
