@@ -21,7 +21,7 @@ import unittest
 import numpy as np
 # Local imports
 from pasam.lattice import (Lattice, LatticeFactory, Lattice2D, Lattice3D,
-                           LatticeMap, LatticeMapFactory)
+                           LatticeMap, LatticeMapFactory, LatticeMap2D, LatticeMap3D)
 from pasam._paths import PATH_TESTFILES
 
 
@@ -145,6 +145,7 @@ class TestLattice(unittest.TestCase):
         latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
 
         self.assertTrue(isinstance(latticemap, LatticeMap))
+        self.assertTrue(isinstance(latticemap, LatticeMap2D))
         self.assertTrue(np.all(map_vals == latticemap.map_vals))
         with self.assertRaises(ValueError):
             self.latmap_fact.make_latticemap(lattice, map_vals[:-1])
@@ -204,6 +205,8 @@ class TestLattice(unittest.TestCase):
         txtfile = PATH_TESTFILES + 'latticemap2d_simple.txt'
         latticemap_test = self.latmap_fact.make_latticemap_from_txt(txtfile)
 
+        self.assertTrue(isinstance(latticemap_test, LatticeMap))
+        self.assertTrue(isinstance(latticemap_test, LatticeMap2D))
         self.assertEqual(latticemap_true, latticemap_test)
 
     # Tests associated to LatticeMap3D
@@ -214,6 +217,7 @@ class TestLattice(unittest.TestCase):
         latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
 
         self.assertTrue(isinstance(latticemap, LatticeMap))
+        self.assertTrue(isinstance(latticemap, LatticeMap3D))
         self.assertTrue(np.all(map_vals == latticemap.map_vals))
         with self.assertRaises(ValueError):
             self.latmap_fact.make_latticemap(lattice, map_vals[:-1])
@@ -257,6 +261,27 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(latticemap.__repr__())
         self.assertTrue(hasattr(latticemap, '__str__'))
         self.assertTrue(latticemap.__str__())
+
+    def test_LatticeMap3D_make_latticemap_from_txt(self):
+        nodes = [[-1.5, 1.5], [5, 8, 9], [-2, 3]]
+        lattice = self.lat_fact.make_lattice(nodes)
+        map_vals = [
+            [0.5, 0.5],
+            [0.8, 0.8],
+            [0.1, 0.1],
+            [0.6, 0.6],
+            [0.9, 0.9],
+            [0.2, 0.2],
+        ]
+        latticemap_true = self.latmap_fact.make_latticemap(lattice, map_vals)
+
+        txtfile = PATH_TESTFILES + 'latticemap3d_simple.txt'
+        latticemap_test = self.latmap_fact.make_latticemap_from_txt(txtfile)
+
+        self.assertTrue(isinstance(latticemap_test, LatticeMap))
+        self.assertTrue(isinstance(latticemap_test, LatticeMap3D))
+        self.assertEqual(latticemap_true, latticemap_test)
+
 
 
 if __name__ == '__main__':
