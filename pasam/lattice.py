@@ -32,10 +32,11 @@ Methods
 # Standard library
 import abc
 import reprlib
+from pathlib import Path
 # Third party requirements
 import numpy as np
 # Local imports
-from pasam.utils import is_pathlib_path
+import pasam.utils as utl
 
 # Constants and Variables
 _RLIB_MAXLIST = 3
@@ -211,13 +212,14 @@ class LatticeMap(abc.ABC):
     """
 
     def __init__(self, lattice, map_vals):
-        if lattice.nnodes != len(map_vals):
+        map_vals_flat = np.asarray(map_vals).ravel()
+        if lattice.nnodes != len(map_vals_flat):
             raise ValueError(f'Uncomparable lattice (nnodes = '
                              f'{lattice.nnodes}) with map values '
-                             f'(nval={len(map_vals)})')
+                             f'(nval={len(map_vals_flat)})')
 
         self.lattice = lattice
-        self.map_vals = np.asarray(map_vals).ravel()
+        self.map_vals = map_vals_flat
 
     def __eq__(self, other):
         if isinstance(other, LatticeMap) and self.lattice == other.lattice:
@@ -288,31 +290,25 @@ class LatticeMapFactory:
 
         Args:
             file (str or pathlib.Path): File or filename.
+            lattice (Lattice, optional): Object defining a lattice.
 
         Returns:
             LatticeMap: Object defining a lattice map
         """
-        _SEP = ' '
 
-        if is_pathlib_path(file):
+        if isinstance(file, Path):
             file = str(file)
+        lines = utl.read_nempty_lines(file)
 
-        with open(file, 'r') as txtfile:
-            lines = txtfile.readlines()
-            nnodes_dim = lines[0].split()
-            ndim = len(nnodes_dim)
+        nnodes_dim = utl.findall_num_in_str(lines[0])
+        ndim = len(nnodes_dim)
+        lines_nodes, lines_map_vals = lines[1:ndim+1], lines[ndim+1:]
 
-            if not lattice:
-                nodes = []
-                for idim in range(ndim):
-                    nodes.append(np.fromstring(lines[idim+1], sep=_SEP))
-                lattice = LatticeFactory().make_lattice(nodes)
+        if not lattice:
+            nodes = [utl.findall_num_in_str(line) for line in lines_nodes]
+            lattice = LatticeFactory().make_lattice(nodes)
 
-            lines = lines[ndim+1:]
-            map_vals = np.empty(0)
-            for line in lines:
-                map_vals = np.append(map_vals, np.fromstring(line, sep=_SEP))
-
+        map_vals = [utl.findall_num_in_str(line) for line in lines_map_vals]
         return cls.make_latticemap(lattice, map_vals)
 
 
@@ -383,8 +379,8 @@ if __name__ == '__main__':
     print('\n3D latticemap:')
     print(repr(latticemap_3D))
 
-    from pasam._paths import PATH_TESTS, file_sep
-    file = PATH_TESTS + 'latticemap2d_testfile.txt'
+    from pasam._paths import PATH_TESTFILES
+    file = PATH_TESTFILES + 'latticemap2d_testfile.txt'
     latticemap_from_txt = latticemap_factory.make_latticemap_from_txt(file)
     print('\nlatticemap from .txt')
     print(repr(latticemap_from_txt))
