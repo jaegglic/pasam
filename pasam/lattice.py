@@ -36,7 +36,6 @@ from pathlib import Path
 # Third party requirements
 import numpy as np
 # Local imports
-import pasam.utils as utl
 
 # Constants and Variables
 _RLIB_MAXLIST = 3
@@ -384,8 +383,8 @@ if __name__ == '__main__':
     print('\n3D latticemap:')
     print(repr(latticemap_3D))
 
-    from pasam._paths import PATH_TESTS, file_sep
-    file = PATH_TESTS + 'latticemap2d_testfile.txt'
+    from pasam._paths import PATH_TESTFILES
+    file = PATH_TESTFILES + 'latticemap2d_testfile.txt'
     latticemap_from_txt = latticemap_factory.make_latticemap_from_txt(file)
     print('\nlatticemap from .txt')
     print(repr(latticemap_from_txt))

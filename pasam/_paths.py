@@ -24,8 +24,9 @@ else:
 PATH_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + file_sep
 
 # Specific path definitions
-PATH_PASAM = f'{PATH_ROOT}pasam{file_sep}'
-PATH_TESTS = f'{PATH_ROOT}tests{file_sep}'
+PATH_PASAM      = f'{PATH_ROOT}pasam{file_sep}'
+PATH_TESTS      = f'{PATH_ROOT}tests{file_sep}'
+PATH_TESTFILES  = f'{PATH_TESTS}testfiles{file_sep}'
 
 if __name__ == '__main__':
     _indent = '  '
@@ -35,3 +36,4 @@ if __name__ == '__main__':
     print(_indent, PATH_ROOT)
     print(_indent, PATH_PASAM)
     print(_indent, PATH_TESTS)
+    print(_indent, PATH_TESTFILES)
