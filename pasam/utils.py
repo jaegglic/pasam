@@ -3,8 +3,8 @@
 
 Generic methods
 ---------------
-    - :fun:`findall_num_in_str`: Extracts all numbers from a string
-    - :fun:`nonempty_lines_from_txt`: Returns all non-empty lines from .txt
+    - :func:`findall_num_in_str`: Extracts all numbers from a string
+    - :func:`nonempty_lines_from_txt`: Returns all non-empty lines from .txt
 """
 
 # Standard library

@@ -277,7 +277,6 @@ class LatticeMapFactory:
         files.
 
         The structure of the txt file is as follows:
-
             ----------------------------------------
             | <nnode_dim>                          |
             | <nodes_x>                            |
@@ -291,7 +290,6 @@ class LatticeMapFactory:
             | ...                                  |
             | map_vals(x=0,...,n-1; y=0, (z=r-1))  |
             ----------------------------------------
-
         In the case of two-dimensional maps, the quantities in parentheses are
         omitted.
 
