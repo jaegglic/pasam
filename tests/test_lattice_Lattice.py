@@ -22,6 +22,7 @@ import numpy as np
 # Local imports
 from pasam.lattice import (Lattice, LatticeFactory, Lattice2D, Lattice3D,
                            LatticeMap, LatticeMapFactory)
+from pasam._paths import PATH_TESTFILES
 
 
 class TestLattice(unittest.TestCase):
@@ -186,6 +187,24 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(latticemap.__repr__())
         self.assertTrue(hasattr(latticemap, '__str__'))
         self.assertTrue(latticemap.__str__())
+
+    def test_LatticeMap2D_make_latticemap_from_txt(self):
+        nodes = [[-1.5, 1.5, 5, 8, 9], [1, 2, 3, 4, 5, 6]]
+        lattice = self.lat_fact.make_lattice(nodes)
+        map_vals = [
+            [0.5, 0.5, 0.5, 0.5, 0.5],
+            [0.6, 0.6, 0.6, 0.6, 0.6],
+            [0.7, 0.7, 0.7, 0.7, 0.7],
+            [0.7, 0.7, 0.7, 0.7, 0.7],
+            [0.6, 0.6, 0.6, 0.6, 0.6],
+            [0.5, 0.5, 0.5, 0.5, 0.5],
+        ]
+        latticemap_true = self.latmap_fact.make_latticemap(lattice, map_vals)
+
+        txtfile = PATH_TESTFILES + 'latticemap2d_simple.txt'
+        latticemap_test = self.latmap_fact.make_latticemap_from_txt(txtfile)
+
+        self.assertEqual(latticemap_true, latticemap_test)
 
     # Tests associated to LatticeMap3D
     def test_LatticeMap3D_gen(self):
