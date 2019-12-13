@@ -387,7 +387,7 @@ if __name__ == '__main__':
     print(repr(latticemap_3D))
 
     from pasam._paths import PATH_TESTFILES
-    file = PATH_TESTFILES + 'latticemap2d_testfile.txt'
+    file = PATH_TESTFILES + 'latticemap2d_float.txt'
     latticemap_from_txt = latticemap_factory.make_latticemap_from_txt(file)
     print('\nlatticemap from .txt')
     print(repr(latticemap_from_txt))
