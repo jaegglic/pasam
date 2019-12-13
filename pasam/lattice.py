@@ -276,17 +276,24 @@ class LatticeMapFactory:
         """Produces two and three dimensional lattice map objects from .txt
         files.
 
-        For a two dimensional map, the structure of the txt file is as follows:
-            ------------------------------------
-            | <nnode_dim>                      |
-            | <nodes_x>                        |
-            | <nodes_y>                        |
-            | map_vals(x=0,...,n-1; y=0)       |
-            | map_vals(x=0,...,n-1; y=1)       |
-            | ...                              |
-            | map_vals(x=0,...,n-1; y=m-1)     |
-            ------------------------------------
-        For a three dimensional map, it is similar.
+        The structure of the txt file is as follows:
+
+            ----------------------------------------
+            | <nnode_dim>                          |
+            | <nodes_x>                            |
+            | <nodes_y>                            |
+            | (<nodes_z>)                          |
+            | map_vals(x=0,...,n-1; y=0, (z=0))    |
+            | map_vals(x=0,...,n-1; y=1, (z=0))    |
+            | ...                                  |
+            | map_vals(x=0,...,n-1; y=m-1, (z=0))  |
+            | map_vals(x=0,...,n-1; y=0, (z=1))    |
+            | ...                                  |
+            | map_vals(x=0,...,n-1; y=0, (z=r-1))  |
+            ----------------------------------------
+
+        In the case of two-dimensional maps, the quantities in parentheses are
+        omitted.
 
         Args:
             file (str or pathlib.Path): File or filename.
