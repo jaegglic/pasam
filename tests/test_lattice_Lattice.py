@@ -5,6 +5,16 @@
 Unit tests for the Lattice* classes in `pasam.lattice.py`.
 """
 
+# -------------------------------------------------------------------------
+#   Authors: Stefanie Marti and Christoph Jaeggli
+#   Institute: Insel Data Science Center, Insel Gruppe AG
+#
+#   Copyright (c) 2020 Stefanie Marti, Christoph Jaeggli
+#
+#   This program is distributed in the hope that it will be useful, but
+#   WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
 # Standard library
 import unittest
 # Third party requirements
