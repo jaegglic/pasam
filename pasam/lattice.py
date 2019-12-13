@@ -32,10 +32,11 @@ Methods
 # Standard library
 import abc
 import reprlib
+from pathlib import Path
 # Third party requirements
 import numpy as np
 # Local imports
-from pasam.utils import is_pathlib_path
+import pasam.utils as utl
 
 # Constants and Variables
 _RLIB_MAXLIST = 3
@@ -294,7 +295,7 @@ class LatticeMapFactory:
         """
         _SEP = ' '
 
-        if is_pathlib_path(file):
+        if isinstance(file, Path):
             file = str(file)
 
         with open(file, 'r') as txtfile:

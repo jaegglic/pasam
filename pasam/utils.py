@@ -3,18 +3,34 @@
 
 Generic methods
 ---------------
-    - :fun:`is_pathlib_path`: Check whether an object-type is pathlib.Path
+    - :fun:`findall_num_in_str`: Extracts all numbers from a string
 """
 
 # Standard library
-import abc
-from pathlib import Path
+import re
 # Third party requirements
 # Local imports
 
 
-def is_pathlib_path(file):
+def findall_num_in_str(s):
+    """ Extracts all numbers in a string.
+
+    Args:
+        s (str): Input string containing numbers
+
+    Returns:
+        list: List of numbers (``float`` or ``int``)
     """
-    Check whether file is a pathlib.Path object.
+    pat = r'[0-9]+\.?[0-9]*'
+    nums = re.findall(pat, s)
+    return [_str2num(n) for n in nums]
+
+
+def _str2num(s):
+    """ Generates ``int`` or ``float`` from a string.
     """
-    return isinstance(file, Path)
+    try:
+        return int(s)
+    except ValueError:
+        return float(s)
+
