@@ -28,6 +28,7 @@ from pasam._paths import PATH_TESTFILES
 _NP_SEED = 458967
 np.random.seed(_NP_SEED)
 
+
 class TestLattice(unittest.TestCase):
 
     def setUp(self):
@@ -194,6 +195,21 @@ class TestLattice(unittest.TestCase):
         with self.assertRaises(TypeError):
             latticemap_left + 'foobar'
 
+    def test_LatticeMap2D__mul__(self):
+        lattice = self.lat_fact.make_lattice(self.nodes2D)
+        num = -25.89
+
+        map_vals = np.random.randn(lattice.nnodes)
+        latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
+        latticmap_mul = self.latmap_fact.make_latticemap(lattice, map_vals * num)
+
+        self.assertEqual(latticmap_mul, latticemap * num)
+        self.assertTrue(latticmap_mul == latticemap * num)
+        self.assertEqual(latticmap_mul, num * latticemap)
+        self.assertTrue(latticmap_mul ==  num * latticemap)
+        with self.assertRaises(TypeError):
+            latticemap * 'foobar'
+
     def test_LatticeMap2D_ndim(self):
         ndim = 2
         lattice = self.lat_fact.make_lattice(self.nodes2D)
@@ -289,6 +305,21 @@ class TestLattice(unittest.TestCase):
             latticemap_left + latticemap_short
         with self.assertRaises(TypeError):
             latticemap_left + 'foobar'
+
+    def test_LatticeMap3D__mul__(self):
+        lattice = self.lat_fact.make_lattice(self.nodes3D)
+        num = -25.89
+
+        map_vals = np.random.randn(lattice.nnodes)
+        latticemap = self.latmap_fact.make_latticemap(lattice, map_vals)
+        latticmap_mul = self.latmap_fact.make_latticemap(lattice, map_vals * num)
+
+        self.assertEqual(latticmap_mul, latticemap * num)
+        self.assertTrue(latticmap_mul == latticemap * num)
+        self.assertEqual(latticmap_mul, num * latticemap)
+        self.assertTrue(latticmap_mul ==  num * latticemap)
+        with self.assertRaises(TypeError):
+            latticemap * 'foobar'
 
     def test_LatticeMap3D_ndim(self):
         ndim = 3
