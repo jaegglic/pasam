@@ -3,8 +3,8 @@
 
 Generic methods
 ---------------
-    - :func:`findall_num_in_str`: Extracts all numbers from a string
-    - :func:`nonempty_lines_from_txt`: Returns all non-empty lines from .txt
+    - :func:`findall_num_in_str`: Extracts all numbers from a string.
+    - :func:`readlines_`: Reads txt file.
 """
 
 # Standard library
@@ -29,7 +29,7 @@ def findall_num_in_str(s):
 
 
 def readlines_(file, remove_blank_lines=False, hint=-1):
-    """ Provides all non-empty files of a text file.
+    """ Reading txt file (similar to builtin ``readlines``).
 
     In addition to the standard implementation of ``readlines`` for
     ``_io.TextIOWrapper``, this version provides the possibility to remove

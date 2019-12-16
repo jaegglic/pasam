@@ -222,6 +222,11 @@ class LatticeMap(abc.ABC):
             return LatticeMapFactory().make_latticemap(self.lattice, map_vals)
         return NotImplemented
 
+    def __eq__(self, other):
+        if isinstance(other, LatticeMap) and self.lattice == other.lattice:
+            return np.all(self.map_vals == other.map_vals)
+        return False
+
     def __init__(self, lattice, map_vals):
         map_vals_flat = np.asarray(map_vals).ravel()
         if lattice.nnodes != len(map_vals_flat):
@@ -232,10 +237,11 @@ class LatticeMap(abc.ABC):
         self.lattice = lattice
         self.map_vals = map_vals_flat
 
-    def __eq__(self, other):
-        if isinstance(other, LatticeMap) and self.lattice == other.lattice:
-            return np.all(self.map_vals == other.map_vals)
-        return False
+    def __mul__(self, other):
+        if isinstance(other, numbers.Number):
+            map_vals = self.map_vals * other
+            return LatticeMapFactory().make_latticemap(self.lattice, map_vals)
+        return NotImplemented
 
     def __radd__(self, other):
         return self + other
@@ -245,6 +251,9 @@ class LatticeMap(abc.ABC):
         map_vals_repr = _rlib.repr(self.map_vals)
         return f'{cls_name}(lattice={repr(self.lattice)}, ' \
                f'map_vals={map_vals_repr})'
+
+    def __rmul__(self, other):
+        return self * other
 
     def __str__(self):
         return self.__repr__()
