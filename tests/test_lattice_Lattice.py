@@ -24,6 +24,9 @@ from pasam.lattice import (Lattice, LatticeFactory, Lattice2D, Lattice3D,
                            LatticeMap, LatticeMapFactory, LatticeMap2D, LatticeMap3D)
 from pasam._paths import PATH_TESTFILES
 
+# Constants
+_NP_SEED = 458967
+np.random.seed(_NP_SEED)
 
 class TestLattice(unittest.TestCase):
 
@@ -167,6 +170,30 @@ class TestLattice(unittest.TestCase):
         self.assertFalse(latticemap is latticemap_eq)
         self.assertFalse(latticemap == latticemap_non_eq)
 
+    def test_LatticeMap2D__add__(self):
+        lattice = self.lat_fact.make_lattice(self.nodes2D)
+        nodes_short = [self.x_short, self.y]
+        lattice_short = self.lat_fact.make_lattice(nodes_short)
+        num = -25.89
+
+        map_vals_left = np.random.randn(lattice.nnodes)
+        map_vals_right = np.random.randn(lattice.nnodes)
+        map_vals_short = np.random.randn(lattice_short.nnodes)
+        latticemap_left = self.latmap_fact.make_latticemap(lattice, map_vals_left)
+        latticemap_right = self.latmap_fact.make_latticemap(lattice, map_vals_right)
+        latticemap_short = self.latmap_fact.make_latticemap(lattice_short, map_vals_short)
+        latticmap_sum = self.latmap_fact.make_latticemap(lattice, map_vals_left + map_vals_right)
+        latticmap_sum_num = self.latmap_fact.make_latticemap(lattice, map_vals_left + num)
+
+        self.assertEqual(latticmap_sum, latticemap_left + latticemap_right)
+        self.assertTrue(latticmap_sum == latticemap_left + latticemap_right)
+        self.assertEqual(latticmap_sum_num, latticemap_left + num)
+        self.assertTrue(latticmap_sum_num == latticemap_left + num)
+        with self.assertRaises(ValueError):
+            latticemap_left + latticemap_short
+        with self.assertRaises(TypeError):
+            latticemap_left + 'foobar'
+
     def test_LatticeMap2D_ndim(self):
         ndim = 2
         lattice = self.lat_fact.make_lattice(self.nodes2D)
@@ -238,6 +265,30 @@ class TestLattice(unittest.TestCase):
         self.assertEqual(latticemap, latticemap_eq)
         self.assertFalse(latticemap is latticemap_eq)
         self.assertFalse(latticemap == latticemap_non_eq)
+
+    def test_LatticeMap3D__add__(self):
+        lattice = self.lat_fact.make_lattice(self.nodes3D)
+        nodes_short = [self.x_short, self.y, self.z]
+        lattice_short = self.lat_fact.make_lattice(nodes_short)
+        num = -25.89
+
+        map_vals_left = np.random.randn(lattice.nnodes)
+        map_vals_right = np.random.randn(lattice.nnodes)
+        map_vals_short = np.random.randn(lattice_short.nnodes)
+        latticemap_left = self.latmap_fact.make_latticemap(lattice, map_vals_left)
+        latticemap_right = self.latmap_fact.make_latticemap(lattice, map_vals_right)
+        latticemap_short = self.latmap_fact.make_latticemap(lattice_short, map_vals_short)
+        latticmap_sum = self.latmap_fact.make_latticemap(lattice, map_vals_left + map_vals_right)
+        latticmap_sum_num = self.latmap_fact.make_latticemap(lattice, map_vals_left + num)
+
+        self.assertEqual(latticmap_sum, latticemap_left + latticemap_right)
+        self.assertTrue(latticmap_sum == latticemap_left + latticemap_right)
+        self.assertEqual(latticmap_sum_num, latticemap_left + num)
+        self.assertTrue(latticmap_sum_num == latticemap_left + num)
+        with self.assertRaises(ValueError):
+            latticemap_left + latticemap_short
+        with self.assertRaises(TypeError):
+            latticemap_left + 'foobar'
 
     def test_LatticeMap3D_ndim(self):
         ndim = 3

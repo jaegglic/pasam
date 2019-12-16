@@ -216,6 +216,7 @@ class LatticeMap(abc.ABC):
             if self.lattice is other.lattice or self.lattice == other.lattice:
                 map_vals = self.map_vals + other.map_vals
                 return LatticeMapFactory().make_latticemap(self.lattice, map_vals)
+            raise ValueError('unsupported operation + for different Lattice objects')
         elif isinstance(other, numbers.Number):
             map_vals = self.map_vals + other
             return LatticeMapFactory().make_latticemap(self.lattice, map_vals)
