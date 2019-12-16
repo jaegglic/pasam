@@ -283,6 +283,5 @@ class TestLattice(unittest.TestCase):
         self.assertEqual(latticemap_true, latticemap_test)
 
 
-
 if __name__ == '__main__':
     unittest.main()

@@ -52,8 +52,29 @@ class TestUtils(unittest.TestCase):
         self.assertFalse(utl._is_blank('  \t \n    * '))
         self.assertFalse(utl._is_blank('  \t \n    § '))
 
-    def test_utils_read_nempty_lines(self):
-        lines_true = [
+    def test_utils_readlines_(self):
+        lines_all_true = [
+            'I   like\n',
+            '                                 \n',
+            'working\t\t\tUnit\n',
+            '  \t           \t\n',
+            '   Tests!!\n',
+            '\t\t\n',
+            'Hopefully \t\t\tthis \n',
+            'one\n',
+            '\t\n',
+            '      *\n',
+            '\t\t\t   \n',
+            '  will\n',
+            '\t'*22 + 'pass!\n',
+            '\n',
+            '\n',
+            '  8\n',
+            '  ^\n',
+            '\t\t\t\t\t    \t \t\n',
+            '\n',
+        ]
+        lines_nempty_true = [
             'I   like\n',
             'working\t\t\tUnit\n',
             '   Tests!!\n',
@@ -61,14 +82,19 @@ class TestUtils(unittest.TestCase):
             'one\n',
             '      *\n',
             '  will\n',
-            '\t'*22 + 'pass!\n',
+            '\t' * 22 + 'pass!\n',
             '  8\n',
             '  ^\n',
         ]
         file = PATH_TESTFILES + 'nonempty_lines.txt'
-        lines_test = utl.read_nempty_lines(file)
-        self.assertEqual(len(lines_test), len(lines_true))
-        for ltest, ltrue in zip(lines_test, lines_true):
+        lines_all_test = utl.readlines_(file, remove_blank_lines=False)
+        lines_nempty_test = utl.readlines_(file, remove_blank_lines=True)
+
+        self.assertEqual(len(lines_all_test), len(lines_all_true))
+        self.assertEqual(len(lines_nempty_test), len(lines_nempty_true))
+        for ltest, ltrue in zip(lines_all_test, lines_all_true):
+            self.assertEqual(ltest, ltrue)
+        for ltest, ltrue in zip(lines_nempty_test, lines_nempty_true):
             self.assertEqual(ltest, ltrue)
 
 
