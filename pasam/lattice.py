@@ -32,6 +32,7 @@ Methods
 # Standard library
 import abc
 import reprlib
+import numbers
 # Third party requirements
 import numpy as np
 # Local imports
@@ -210,6 +211,16 @@ class LatticeMap(abc.ABC):
             nodes
     """
 
+    def __add__(self, other):
+        if isinstance(other, LatticeMap):
+            if self.lattice is other.lattice or self.lattice == other.lattice:
+                map_vals = self.map_vals + other.map_vals
+                return LatticeMapFactory().make_latticemap(self.lattice, map_vals)
+        elif isinstance(other, numbers.Number):
+            map_vals = self.map_vals + other
+            return LatticeMapFactory().make_latticemap(self.lattice, map_vals)
+        return NotImplemented
+
     def __init__(self, lattice, map_vals):
         map_vals_flat = np.asarray(map_vals).ravel()
         if lattice.nnodes != len(map_vals_flat):
@@ -224,6 +235,9 @@ class LatticeMap(abc.ABC):
         if isinstance(other, LatticeMap) and self.lattice == other.lattice:
             return np.all(self.map_vals == other.map_vals)
         return False
+
+    def __radd__(self, other):
+        return self + other
 
     def __repr__(self):
         cls_name = type(self).__name__
