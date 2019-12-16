@@ -28,11 +28,18 @@ def findall_num_in_str(s):
     return [_str2num(n) for n in nums]
 
 
-def read_nempty_lines(file):
+def readlines_(file, remove_blank_lines=False, hint=-1):
     """ Provides all non-empty files of a text file.
+
+    In addition to the standard implementation of ``readlines`` for
+    ``_io.TextIOWrapper``, this version provides the possibility to remove
+    empty text lines.
 
     Args:
         file (str or pathlib.Path): File or filename.
+        remove_blank_lines (bool, optional): Remove blank lines.
+        hint (int, optional): Limit of the cumulative size (in bytes/
+            characters) of all lines to be read.
 
     Returns:
         list: All non empty lines of text file
@@ -42,7 +49,10 @@ def read_nempty_lines(file):
 
     with open(file, 'r') as txtfile:
         lines = txtfile.readlines()
-    return [line for line in lines if not _is_blank(line)]
+
+    if remove_blank_lines:
+        lines = [line for line in lines if not _is_blank(line)]
+    return lines
 
 
 def _is_blank(s):
