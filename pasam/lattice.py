@@ -32,7 +32,6 @@ Methods
 # Standard library
 import abc
 import reprlib
-from pathlib import Path
 # Third party requirements
 import numpy as np
 # Local imports
@@ -302,20 +301,18 @@ class LatticeMapFactory:
         Returns:
             LatticeMap: Object defining a lattice map
         """
-
-        if isinstance(file, Path):
-            file = str(file)
-        lines = utl.read_nempty_lines(file)
+        _REM_BLANK = True
+        lines = utl.readlines_(file, remove_blank_lines=_REM_BLANK)
 
         nnodes_dim = utl.findall_num_in_str(lines[0])
         ndim = len(nnodes_dim)
-        lines_nodes, lines_map_vals = lines[1:ndim+1], lines[ndim+1:]
 
+        lines_nodes, lines_map_vals = lines[1:ndim+1], lines[ndim+1:]
         if not lattice:
             nodes = [utl.findall_num_in_str(line) for line in lines_nodes]
             lattice = LatticeFactory().make_lattice(nodes)
-
         map_vals = [utl.findall_num_in_str(line) for line in lines_map_vals]
+
         return cls.make_latticemap(lattice, map_vals)
 
 
