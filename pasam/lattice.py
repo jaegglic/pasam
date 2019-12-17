@@ -102,7 +102,7 @@ class Lattice(abc.ABC):
         return int(np.prod(self.nnodes_dim))
 
 
-# TODO make LatticeFactory abstract
+# TODO: make LatticeFactory abstract
 class LatticeFactory:
     """`LatticeFactory` produces two and three dimensional lattice objects.
     """
@@ -212,17 +212,22 @@ class LatticeMap(abc.ABC):
     """
 
     def __add__(self, other):
+        """Supports ``LatticeMap + LatticeMap`` as well as ``LatticeMap +
+        number.Number``"""
         if isinstance(other, LatticeMap):
             if self.lattice is other.lattice or self.lattice == other.lattice:
                 map_vals = self.map_vals + other.map_vals
                 return LatticeMapFactory().make_latticemap(self.lattice, map_vals)
             raise ValueError('unsupported operation + for different Lattice objects')
+
         elif isinstance(other, numbers.Number):
             map_vals = self.map_vals + other
             return LatticeMapFactory().make_latticemap(self.lattice, map_vals)
+
         return NotImplemented
 
     def __eq__(self, other):
+        """Equality is based on `lattice` and `map_vals`."""
         if isinstance(other, LatticeMap) and self.lattice == other.lattice:
             return np.all(self.map_vals == other.map_vals)
         return False
@@ -238,6 +243,7 @@ class LatticeMap(abc.ABC):
         self.map_vals = map_vals_flat
 
     def __mul__(self, other):
+        """Supports multiplication by ``numbers.Number``."""
         if isinstance(other, numbers.Number):
             map_vals = self.map_vals * other
             return LatticeMapFactory().make_latticemap(self.lattice, map_vals)
@@ -268,6 +274,8 @@ class LatticeMap(abc.ABC):
         return self.lattice.ndim
 
 
+# TODO: make LatticeMapFactory abstract
+# TODO: Is it needed to define LatticeMap2D and LatticeMap3D
 class LatticeMapFactory:
     """`LatticeMapFactory` produces two and three dimensional lattice map
     objects.
