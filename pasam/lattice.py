@@ -3,16 +3,8 @@
 
 Classes
 -------
-    - :class:`Lattice`: (`abstract`) Parent type definition for the lattice
-      factory :class:`LatticeFactory`
-    - :class:`LatticeFactory`: Factory of lattices
-    - :class:`Lattice2D`: Lattice in two dimensions
-    - :class:`Lattice3D`: Lattice in three dimensions
-    - :class:`LatticeMap`: (`abstract`) Parent type definition for the
-      latticemap factory :class:`LatticeMapFactory`
-    - :class:`LatticeMapFactory`: Factory of latticemaps
-    - :class:`LatticeMap2D`: Latticemap in two dimensions
-    - :class:`LatticeMap3D`: Latticemap in three dimensions
+    - :class:`Lattice`: Lattice nodes in 1-, 2-, or 3-dimensions
+    - :class:`LatticeMap`: Value map associated to a lattice
 
 Methods
 -------
@@ -104,8 +96,7 @@ class Lattice:
 
 
 class LatticeMap:
-    """`LatticeMap` defines an abstract parent class for any map of real values
-    that is associated to a lattice.
+    """`LatticeMap` defines a value map of associated to a ``Lattice``.
 
     Args:
         lattice (Lattice): Object defining a lattice
