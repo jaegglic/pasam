@@ -36,12 +36,14 @@ _rlib = reprlib.Repr()
 _rlib.maxlist = _RLIB_MAXLIST
 
 
+# Common error messages
+def _errmsg_incons_lat(file):
+    return f'Inconsistent lattice in file {file}'
+
+
 class Condition(abc.ABC):
     """`Condition` defines an abstract parent class for any restriction in the
     path sampling.
-
-    Args:
-        lattice (Lattice): Object defining a lattice.
 
     Notes:
         Any sub-class of `Condition` must provide an implementation of
@@ -49,13 +51,13 @@ class Condition(abc.ABC):
             - :meth:`_make_latticemap`
     """
 
-    def __init__(self, lattice):
-        self._lattice = lattice
-
     @abc.abstractmethod
-    def make_latticemap(self):
+    def make_latticemap(self, lattice):
         """Defines a map with possible/impossible lattice nodes (according to
         the condition).
+
+        Args:
+            lattice (Lattice): Object defining a lattice.
 
         Returns:
             LatticeMap: Lattice map issued from the condition.
@@ -66,17 +68,25 @@ class ConditionFile(Condition):
     """`ConditionFile` defines a condition from a .txt file.
 
     Args:
-        lattice (Lattice): Object defining a lattice.
         file (str or pathlib.Path): File or filename.
-
     """
 
-    def __init__(self, lattice, file):
-        super().__init__(lattice)
+    def __init__(self, file):
         self._file = file
 
-    def make_latticemap(self):
-        pass
+    def make_latticemap(self, lattice):
+        latticemap = LatticeMap.from_txt(self._file)
+
+        # Saving memory by using the same lattice object for each condition
+        if latticemap.lattice != lattice:
+            raise ValueError(_errmsg_incons_lat(self._file))
+        latticemap.lattice = lattice
+
+        return latticemap
+
+
+class ConditionPoint(Condition):
+    pass
 # TODO: Define ConditionFile and ConditionPoint
 
 
@@ -236,7 +246,7 @@ class LatticeMap:
         if not lattice:
             lattice = lattice_file
         elif lattice != lattice_file:
-            raise ValueError(f'Inconsistent lattice in file {file}')
+            raise ValueError(_errmsg_incons_lat(file))
 
         return cls(lattice, map_vals)
 
