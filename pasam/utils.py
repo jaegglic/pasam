@@ -3,6 +3,7 @@
 
 Generic methods
 ---------------
+    - :func:`condmap_from_file`: Condition map from txt file.
     - :func:`findall_num_in_str`: Extracts all numbers from a string.
     - :func:`readlines_`: Reads txt file.
 """
