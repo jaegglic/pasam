@@ -41,29 +41,6 @@ def condmap_from_file(file):
     return map_vals
 
 
-def _ams_vals_to_bool(vals):
-    """ By default, the AMS generates files where the permitted nodes have
-    values `0` and the blocked nodes have value `1`
-    """
-    _TRUE_VALS  = (-0.1, 0.1)
-    _FALSE_VALS = ( 0.9, 1.1)
-
-    vals = np.asarray(vals).ravel()
-    map_vals = np.asarray(vals, dtype=bool)
-
-    ind_true = np.logical_and(vals > _TRUE_VALS[0], vals < _TRUE_VALS[1])
-    ind_false = np.logical_and(vals > _FALSE_VALS[0], vals < _FALSE_VALS[1])
-
-    # Check whether all values have been covered
-    if np.sum(np.logical_xor(ind_true, ind_false)) != len(map_vals):
-        ind_not_unique = np.logical_not( np.logical_xor(ind_true, ind_false) )
-        ind = np.where(ind_not_unique)[0]
-        raise ValueError(f'Values(s) {vals[ind]} are not uniquely identified')
-
-    map_vals[ind_true] = True
-    map_vals[ind_false] = False
-    return map_vals
-
 def findall_num_in_str(s):
     """Extracts all numbers in a string.
 
@@ -150,6 +127,30 @@ def readfile_latticemap(file):
     map_vals = [findall_num_in_str(line) for line in lines_map_vals]
 
     return nnodes_dim, nodes, map_vals
+
+
+def _ams_vals_to_bool(vals):
+    """ By default, the AMS generates files where the permitted nodes have
+    values `0` and the blocked nodes have value `1`
+    """
+    _TRUE_VALS  = (-0.1, 0.1)
+    _FALSE_VALS = ( 0.9, 1.1)
+
+    vals = np.asarray(vals).ravel()
+    map_vals = np.asarray(vals, dtype=bool)
+
+    ind_true = np.logical_and(vals > _TRUE_VALS[0], vals < _TRUE_VALS[1])
+    ind_false = np.logical_and(vals > _FALSE_VALS[0], vals < _FALSE_VALS[1])
+
+    # Check whether all values have been covered
+    if np.sum(np.logical_xor(ind_true, ind_false)) != len(map_vals):
+        ind_not_unique = np.logical_not( np.logical_xor(ind_true, ind_false) )
+        ind = np.where(ind_not_unique)[0]
+        raise ValueError(f'Values(s) {vals[ind]} are not uniquely identified')
+
+    map_vals[ind_true] = True
+    map_vals[ind_false] = False
+    return map_vals
 
 
 def _is_blank(s):
