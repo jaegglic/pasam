@@ -36,6 +36,59 @@ _rlib = reprlib.Repr()
 _rlib.maxlist = _RLIB_MAXLIST
 
 
+# Common error messages
+def _errmsg_incons_lat(file):
+    return f'Inconsistent lattice in file {file}'
+
+
+class Condition(abc.ABC):
+    """`Condition` defines an abstract parent class for any restriction in the
+    path sampling.
+
+    Notes:
+        Any sub-class of `Condition` must provide an implementation of
+
+            - :meth:`_make_latticemap`
+    """
+
+    @abc.abstractmethod
+    def make_condmap(self, lattice):
+        """Produces a condition map with possible/impossible lattice nodes.
+
+        Args:
+            lattice (Lattice): Object defining a lattice.
+
+        Returns:
+            LatticeMap: Lattice map issued from the condition.
+        """
+
+
+class ConditionFile(Condition):
+    """`ConditionFile` defines a condition from a .txt file.
+
+    Args:
+        file (str or pathlib.Path): File or filename.
+    """
+
+    def __init__(self, file):
+        self._file = file
+
+    # Definition of the abstract method in `Condition`
+    def make_condmap(self, lattice):
+        map_vals = utl.condmap_from_file(self._file)
+        return LatticeMap(lattice, map_vals)
+
+
+class ConditionPoint(Condition):
+
+    def __init__(self, point):
+        self._point = point
+
+    # Definition of the abstract method in `Condition`
+    def make_condmap(self, lattice):
+        pass
+
+
 class Lattice:
     """`Lattice` defines the computational lattice.
 
@@ -99,9 +152,12 @@ class LatticeMap:
     """`LatticeMap` defines a value map of associated to a ``Lattice``.
 
     Args:
-        lattice (Lattice): Object defining a lattice
+        lattice (Lattice): Object defining a lattice.
         map_vals (array_like, shape=(n,)): Map values associated to the lattice
-            nodes
+            nodes.
+        dtype (data-type, optional): The desired data-type for the map_values.
+            If not given, then the type will be determined as the minimum
+            requirement by `numpy`.
 
     Attributes:
         lattice (Lattice): Object defining a lattice
@@ -128,8 +184,8 @@ class LatticeMap:
             return np.all(self.map_vals == other.map_vals)
         return False
 
-    def __init__(self, lattice, map_vals):
-        map_vals_flat = np.asarray(map_vals).ravel()
+    def __init__(self, lattice, map_vals, dtype=None):
+        map_vals_flat = np.asarray(map_vals, dtype=dtype).ravel()
         if lattice.nnodes != len(map_vals_flat):
             raise ValueError(f'Uncomparable lattice (nnodes = '
                              f'{lattice.nnodes}) with map values '
@@ -171,27 +227,10 @@ class LatticeMap:
 
     @classmethod
     def from_txt(cls, file, lattice=None):
-        """Produces two and three dimensional lattice map objects from .txt
-        files.
+        """Produces lattice map objects from .txt files.
 
-        The structure of the txt file is as follows::
-
-            ----------------------------------------
-            | <nnode_dim>                          |
-            | <nodes_x>                            |
-            | <nodes_y>                            |
-            | (<nodes_z>)                          |
-            | map_vals(x=0,...,n-1; y=0, (z=0))    |
-            | map_vals(x=0,...,n-1; y=1, (z=0))    |
-            | ...                                  |
-            | map_vals(x=0,...,n-1; y=m-1, (z=0))  |
-            | map_vals(x=0,...,n-1; y=0, (z=1))    |
-            | ...                                  |
-            | map_vals(x=0,...,n-1; y=0, (z=r-1))  |
-            ----------------------------------------
-
-        In the case of two-dimensional maps, the quantities in parentheses are
-        omitted.
+        The structure of a latticemap text file is reported in the function
+        `utl.read_latticemap_file`.
 
         Args:
             file (str or pathlib.Path): File or filename.
@@ -200,21 +239,13 @@ class LatticeMap:
         Returns:
             LatticeMap: Object defining a lattice map
         """
-        _REM_BLANK = True
-        lines = utl.readlines_(file, remove_blank_lines=_REM_BLANK)
+        _, nodes, map_vals = utl.readfile_latticemap(file)
+        lattice_file = Lattice(nodes)
 
-        # Number of nodes per dimenstion (defined in lines[0])
-        nnodes_dim = utl.findall_num_in_str(lines[0])
-        ndim = len(nnodes_dim)
-
-        # Definition of the lattice (defined in lines[1:ndim+1])
-        lines_nodes, lines_map_vals = lines[1:ndim+1], lines[ndim+1:]
         if not lattice:
-            nodes = [utl.findall_num_in_str(line) for line in lines_nodes]
-            lattice = Lattice(nodes)
-
-        # Definition of the map_vals (defined in lines[ndim+1:])
-        map_vals = [utl.findall_num_in_str(line) for line in lines_map_vals]
+            lattice = lattice_file
+        elif lattice != lattice_file:
+            raise ValueError(_errmsg_incons_lat(file))
 
         return cls(lattice, map_vals)
 

@@ -97,6 +97,44 @@ class TestUtils(unittest.TestCase):
         for ltest, ltrue in zip(lines_nempty_test, lines_nempty_true):
             self.assertEqual(ltest, ltrue)
 
+    def test_utils_readfile_latticemap2D(self):
+        nnodes_dim_true = [5, 6]
+        nodes_true = [[-1.5, 1.5, 5, 8, 9], [1, 2, 3, 4, 5, 6]]
+        map_vals_true = [
+            [0.5, 0.5, 0.5, 0.5, 0.5],
+            [0.6, 0.6, 0.6, 0.6, 0.6],
+            [0.7, 0.7, 0.7, 0.7, 0.7],
+            [0.7, 0.7, 0.7, 0.7, 0.7],
+            [0.6, 0.6, 0.6, 0.6, 0.6],
+            [0.5, 0.5, 0.5, 0.5, 0.5],
+        ]
+
+        file = PATH_TESTFILES + 'latticemap2d_simple.txt'
+        nnodes_dim_test, nodes_test, map_vals_test = utl.readfile_latticemap(file)
+
+        self.assertEqual(nnodes_dim_true, nnodes_dim_test)
+        self.assertEqual(nodes_true, nodes_test)
+        self.assertEqual(map_vals_true, map_vals_test)
+
+    def test_utils_readfile_latticemap3D(self):
+        nnodes_dim_true = [2, 3, 2]
+        nodes_true = [[-1.5, 1.5], [5, 8, 9], [-2, 3]]
+        map_vals_true = [
+            [0.5, 0.5],
+            [0.8, 0.8],
+            [0.1, 0.1],
+            [0.6, 0.6],
+            [0.9, 0.9],
+            [0.2, 0.2],
+        ]
+
+        file = PATH_TESTFILES + 'latticemap3d_simple.txt'
+        nnodes_dim_test, nodes_test, map_vals_test = utl.readfile_latticemap(file)
+
+        self.assertEqual(nnodes_dim_true, nnodes_dim_test)
+        self.assertEqual(nodes_true, nodes_test)
+        self.assertEqual(map_vals_true, map_vals_test)
+
 
 if __name__ == '__main__':
     unittest.main()
