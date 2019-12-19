@@ -80,7 +80,7 @@ class ConditionFile(Condition):
 
 
 class ConditionPoint(Condition):
-
+    # TODO: Definition of ConditionPoint
     def __init__(self, point):
         self._point = point
 
