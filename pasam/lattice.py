@@ -52,9 +52,8 @@ class Condition(abc.ABC):
     """
 
     @abc.abstractmethod
-    def make_latticemap(self, lattice):
-        """Defines a map with possible/impossible lattice nodes (according to
-        the condition).
+    def make_condmap(self, lattice):
+        """Produces a condition map with possible/impossible lattice nodes.
 
         Args:
             lattice (Lattice): Object defining a lattice.
@@ -74,20 +73,20 @@ class ConditionFile(Condition):
     def __init__(self, file):
         self._file = file
 
-    def make_latticemap(self, lattice):
-        latticemap = LatticeMap.from_txt(self._file)
-
-        # Saving memory by using the same lattice object for each condition
-        if latticemap.lattice != lattice:
-            raise ValueError(_errmsg_incons_lat(self._file))
-        latticemap.lattice = lattice
-
-        return latticemap
+    # Definition of the abstract method in `Condition`
+    def make_condmap(self, lattice):
+        map_vals = utl.condmap_from_file(self._file)
+        return LatticeMap(lattice, map_vals)
 
 
 class ConditionPoint(Condition):
-    pass
-# TODO: Define ConditionFile and ConditionPoint
+
+    def __init__(self, point):
+        self._point = point
+
+    # Definition of the abstract method in `Condition`
+    def make_condmap(self, lattice):
+        pass
 
 
 class Lattice:
