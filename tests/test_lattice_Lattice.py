@@ -238,8 +238,8 @@ class TestLattice(unittest.TestCase):
         ]
         latticemap_true = LatticeMap(lattice, map_vals)
 
-        txtfile = PATH_TESTFILES + 'latticemap2d_simple.txt'
-        latticemap_test = LatticeMap.from_txt(txtfile)
+        file = PATH_TESTFILES + 'latticemap2d_simple.txt'
+        latticemap_test = LatticeMap.from_txt(file)
 
         self.assertTrue(isinstance(latticemap_test, LatticeMap))
         self.assertEqual(latticemap_true, latticemap_test)
@@ -348,8 +348,8 @@ class TestLattice(unittest.TestCase):
         ]
         latticemap_true = LatticeMap(lattice, map_vals)
 
-        txtfile = PATH_TESTFILES + 'latticemap3d_simple.txt'
-        latticemap_test = LatticeMap.from_txt(txtfile)
+        file = PATH_TESTFILES + 'latticemap3d_simple.txt'
+        latticemap_test = LatticeMap.from_txt(file)
 
         self.assertTrue(isinstance(latticemap_test, LatticeMap))
         self.assertEqual(latticemap_true, latticemap_test)
