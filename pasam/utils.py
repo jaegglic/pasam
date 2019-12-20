@@ -4,8 +4,10 @@
 Generic methods
 ---------------
     - :func:`condmap_from_file`: Condition map from txt file.
+    - :func:`condmap_from_point`: Condition map from conditioning point.
     - :func:`findall_num_in_str`: Extracts all numbers from a string.
-    - :func:`readlines_`: Reads txt file.
+    - :func:`readlines_`: Reads txt file (possibility to remove empty lines).
+    - :func:`readfile_latticemap`: Reads a latticemap file.
 """
 
 # -------------------------------------------------------------------------
@@ -19,6 +21,7 @@ Generic methods
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # Standard library
+import abc
 import re
 from pathlib import Path
 # Third party requirements
@@ -26,6 +29,7 @@ import numpy as np
 # Local imports
 
 
+# `Public` methods
 def condmap_from_file(file):
     """Reads a condition map from a given .txt file.
 
@@ -38,6 +42,21 @@ def condmap_from_file(file):
     """
     _, _, vals = readfile_latticemap(file)
     map_vals = _ams_vals_to_bool(vals)
+    return map_vals
+
+
+def condmap_from_point(components, nodes):
+    """Generates a condition map from a conditioning point.
+
+    Args:
+        components (array_like, shape=(n,)): Coordinates of point.
+        nodes (list): Tensor product nodes.
+
+    Returns:
+        ndarray: Boolean array for permitted (True) and blocked (False) nodes.
+    """
+    # TODO: add test for condmap_from_point
+    map_vals = _ams_point_to_bool(components, nodes)
     return map_vals
 
 
@@ -129,10 +148,42 @@ def readfile_latticemap(file):
     return nnodes_dim, nodes, map_vals
 
 
+# `Private` Methods
+def _ams_point_to_bool(components, nodes):
+    """Generates a condition map from a conditioning point.
+
+    Args:
+        components (array_like, shape=(n,)): Coordinates of point.
+        nodes (list): Tensor product nodes.
+
+    Returns:
+        ndarray: Boolean array for permitted (True) and blocked (False) nodes.
+    """
+    # TODO: add tests for _ams_point_to_bool
+    # TODO: refactor _ams_point_to_bool
+    # TODO: make `specs` an argument
+    # Movement specifications
+    specs = {
+        'type':                         'GantryDominant',
+        'end_pts':                      (-179, 179),
+        # Table rotation per gantry rotation:
+        #   1: 3 neighbors (+- 2 table degrees per 2 gantry degrees)
+        #   2: 5 neighbors (+- 4 table degrees per 2 gantry degrees)
+        'table_per_gantry_rot':         1,
+    }
+
+    factory_fun = _PointTrajectoryFactory.make_pointtrajectory
+    pnt_traj = factory_fun(components, nodes, specs)
+
+    return pnt_traj.make_condmap()
+
+
 def _ams_vals_to_bool(vals):
-    """ By default, the AMS generates files where the permitted nodes have
+    """By default, the AMS generates files where the permitted nodes have
     values `0` and the blocked nodes have value `1`
     """
+    # TODO: add tests for _ams_vals_to_bool
+    # TODO: refactor _ams_vals_to_bool
     _TRUE_VALS  = (-0.1, 0.1)
     _FALSE_VALS = ( 0.9, 1.1)
 
@@ -166,4 +217,84 @@ def _str2num(s):
         return int(s)
     except ValueError:
         return float(s)
+
+
+# `Private` Classes
+# TODO: Review and refactor all trajectories classes
+# TODO: Test all trajectory classes
+class _PointTrajectory(abc.ABC):
+    """`_PointTrajectory` defines an abstract parent class for the machine
+    movement restrictions by a point in the space.
+
+    Notes:
+        Any sub-class of `_PointTrajectory` must provide an implementation of
+
+            - :meth:`make_condmap`
+    """
+    
+    @abc.abstractmethod
+    def make_condmap(self):
+        """Generates a condition map from a conditioning point.
+
+        Returns:
+            ndarray: Boolean array for permitted (True) and blocked (False)
+                nodes.
+        """
+
+
+class _PointTrajectoryFactory:
+    """`_PointTrajectoryFactory` produces instances of ``_PointTrajectory``
+    according to the specifications.
+    """
+
+    @staticmethod
+    def make_pointtrajectory(components, nodes, specs):
+        _dim = len(nodes)
+        if _dim == 2 and specs['type'] == 'GantryDominant':
+            return _PointTrajectoryGantryDominant2D(components, nodes, specs)
+        else:
+            msg = f'No sub-class implementation for ' \
+                  f'dim={_dim} and type="{specs["type"]}"'
+            raise ValueError(msg)
+
+
+class _PointTrajectoryGantryDominant2D(_PointTrajectory):
+    """`_PointTrajectoryGantryDominant2D` is the usual 2D gantry dominated
+    movement restriction class.
+
+    Args:
+        components (array_like, shape=(n,)): Coordinates of point.
+        nodes (list): Tensor product nodes.
+    """
+
+    def __init__(self, components, nodes, specs):
+        self._components = components
+        self._nodes = nodes
+        self._specs = specs
+
+    def make_condmap(self):
+        _igantry = 0
+        _itable = 1
+
+        nnodes_dim = tuple(len(n) for n in self._nodes)
+        map_vals = np.zeros(nnodes_dim, dtype=bool)
+
+        gantry_nodes = np.asarray(self._nodes[_igantry]).ravel()
+        table_nodes = np.asarray(self._nodes[_itable]).ravel()
+
+        gantry_comp = self._components[_igantry]
+        table_comp = self._components[_itable]
+
+        tpg_rot = self._specs['table_per_gantry_rot']
+        for inode, node in enumerate(gantry_nodes):
+            table_range = abs(node - gantry_comp)*tpg_rot
+            v_min, v_max = table_comp - table_range, table_comp + table_range
+
+            itable_min = np.argmin(np.abs(table_nodes - v_min))
+            itable_max = np.argmin(np.abs(table_nodes - v_max))
+
+            map_vals[inode, itable_min:itable_max+1] = True
+
+        return map_vals
+
 

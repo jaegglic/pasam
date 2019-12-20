@@ -48,7 +48,7 @@ class Condition(abc.ABC):
     Notes:
         Any sub-class of `Condition` must provide an implementation of
 
-            - :meth:`_make_latticemap`
+            - :meth:`make_condmap`
     """
 
     @abc.abstractmethod
