@@ -30,6 +30,16 @@ class TestCondition(unittest.TestCase):
     def setUp(self):
         pass
 
+    # Tests associated to ConditionText
+    def test_ConditionText_print(self):
+        file = PATH_TESTFILES + 'latticemap2d_int.txt'
+        condition = ConditionFile(file)
+
+        self.assertTrue(hasattr(condition, '__repr__'))
+        self.assertTrue(condition.__repr__())
+        self.assertTrue(hasattr(condition, '__str__'))
+        self.assertTrue(condition.__str__())
+
     def test_ConditionText_gen(self):
         file = PATH_TESTFILES + 'latticemap2d_int.txt'
         condition = ConditionFile(file)
@@ -88,6 +98,52 @@ class TestCondition(unittest.TestCase):
         self.assertTrue(cond_latmap.map_vals.dtype == 'bool')
         self.assertEqual(latticemap3D_true, cond_latmap)
         self.assertTrue(latticemap3D_true == cond_latmap)
+
+    # Tests associated to ConditionPoint
+    def test_ConditionPoint_print(self):
+        components = (0, 1, -1)
+        condition = ConditionPoint(components)
+
+        self.assertTrue(hasattr(condition, '__repr__'))
+        self.assertTrue(condition.__repr__())
+        self.assertTrue(hasattr(condition, '__str__'))
+        self.assertTrue(condition.__str__())
+
+    def test_ConditionPoint_gen(self):
+        components = (0, 1, -1)
+        condition = ConditionPoint(components)
+
+        self.assertTrue(isinstance(condition, Condition))
+        self.assertTrue(isinstance(condition, ConditionPoint))
+
+    def test_ConditionPoint__eq__(self):
+        components = (0, 1, -1)
+        condition = ConditionPoint(components)
+        condition_is = condition
+        condition_eq = ConditionPoint(components)
+        condition_noneq = ConditionPoint([5, 1, -1])
+
+        self.assertTrue(condition is condition_is)
+        self.assertTrue(condition == condition_is)
+        self.assertTrue(condition == condition_eq)
+        self.assertTrue(condition == (0, 1, -1))
+        self.assertTrue(condition == [0, 1, -1])
+        self.assertFalse(condition is condition_eq)
+        self.assertFalse(condition is condition_noneq)
+        self.assertFalse(condition == condition_noneq)
+        self.assertFalse(condition == (5, 1, -1))
+        self.assertFalse(condition == [5, 1, -1])
+
+    def test_ConditionPoint__len__(self):
+        condition1D_single = ConditionPoint(1)
+        condition1D_tuple = ConditionPoint((1,))
+        condition2D = ConditionPoint((1, 2.))
+        condition3D = ConditionPoint((3, 4.5, 6))
+
+        self.assertTrue(len(condition1D_single) == 1)
+        self.assertTrue(len(condition1D_tuple) == 1)
+        self.assertTrue(len(condition2D) == 2)
+        self.assertTrue(len(condition3D) == 3)
 
 
 if __name__ == '__main__':
