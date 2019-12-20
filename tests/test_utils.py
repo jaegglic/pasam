@@ -18,6 +18,8 @@ Unit tests for the utilities in `pasam.utils.py`.
 # Standard library
 import unittest
 # Third party requirements
+import numpy as np
+import matplotlib.pyplot as plt
 # Local imports
 import pasam.utils as utl
 from pasam._paths import PATH_TESTFILES
@@ -134,6 +136,18 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(nnodes_dim_true, nnodes_dim_test)
         self.assertEqual(nodes_true, nodes_test)
         self.assertEqual(map_vals_true, map_vals_test)
+
+    # TODO: improve this test
+    # TODO: remove import of numpy and matplotlib
+    def test_utils___ams_point_to_bool(self):
+        # TODO: change specs
+        map_vals = utl._ams_point_to_bool(
+            components=(-1, -1),
+            nodes=[np.arange(-179, 181, 2), np.arange(-89, 90, 2)]
+        )
+
+        plt.imshow(map_vals.transpose()*1, origin='lower')
+        plt.show()
 
 
 if __name__ == '__main__':
