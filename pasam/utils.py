@@ -339,4 +339,3 @@ class _TrajectoryPermissionGantryDominant3D(_TrajectoryPermission):
     # TODO: Define _TrajectoryPermissionGantryDominant3D
     # TODO: Add tests for _TrajectoryPermissionGantryDominant3D
     pass
-
