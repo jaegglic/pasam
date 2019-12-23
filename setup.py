@@ -18,7 +18,7 @@ def test_suite():
 setup(
     name='pasam-package',
     packages=find_namespace_packages(),
-    version='0.1.2',
+    version='0.1.3',
     description='Path sampling package',
     long_description=long_description,
     long_description_content_type="text/x-rst",
@@ -26,7 +26,7 @@ setup(
     license='BSD',
     author_email='stefanie.marti@insel.ch, christoph.jaeggli@insel.ch',
     url='https://github.com/IDSC-io/pasam',
-    keywords=['sampling', 'radiotherapy', 'delivery path', ],
+    keywords=['sampling', 'radiotherapy', 'delivery path'],
     python_requires='>=3.6',
     test_suite='setup.test_suite',
     classifiers=[

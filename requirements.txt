@@ -11,3 +11,5 @@ sphinx_rtd_theme >= 0.4.3
 # Numpy > 1.15.4 does not work with CI (on travis we get the error message:
 #     RuntimeError: implement_array_function method already has a docstring
 numpy == 1.15.4
+
+matplotlib >= 3.1.2
