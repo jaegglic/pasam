@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 # Local imports
 import pasam.utils as utl
 from pasam._paths import PATH_TESTFILES
+import pasam._settings as settings
 
 
 class TestUtils(unittest.TestCase):
@@ -139,7 +140,7 @@ class TestUtils(unittest.TestCase):
 
     # TODO: improve this test
     # TODO: remove import of numpy and matplotlib
-    def test_utils__ams_point_to_bool(self):
+    def test_utils__ams_condition_point_to_bool(self):
         # TODO: change specs
         map_vals = utl._ams_condition_point_to_bool_map(
             components=(-9, -89),
@@ -149,6 +150,9 @@ class TestUtils(unittest.TestCase):
 
         plt.imshow(map_vals.transpose()*1, origin='lower')
         # plt.show()
+
+    def test_utils__ams_val_map_to_bool_map(self):
+        pass
 
 
 if __name__ == '__main__':
