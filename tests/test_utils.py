@@ -141,7 +141,7 @@ class TestUtils(unittest.TestCase):
     # TODO: remove import of numpy and matplotlib
     def test_utils__ams_point_to_bool(self):
         # TODO: change specs
-        map_vals = utl._ams_point_to_bool(
+        map_vals = utl._ams_condition_point_to_bool_map(
             components=(-9, -89),
             # components=None,
             nodes=[np.arange(-179, 181, 2), np.arange(-89, 90, 2)]

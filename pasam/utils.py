@@ -3,8 +3,8 @@
 
 Generic methods
 ---------------
-    - :func:`condmap_from_file`: Condition map from txt file.
-    - :func:`condmap_from_point`: Condition map from conditioning point.
+    - :func:`permission_map_from_file`: Permission map from txt file.
+    - :func:`permission_map_from_point`: Permission map from conditioning point.
     - :func:`findall_num_in_str`: Extracts all numbers from a string.
     - :func:`readlines_`: Reads txt file (possibility to remove empty lines).
     - :func:`readfile_latticemap`: Reads a latticemap file.
@@ -45,18 +45,18 @@ def permission_map_from_file(file):
     return map_vals
 
 
-def condmap_from_point(components, nodes):
-    """Generates a condition map from a conditioning point.
+def permission_map_from_point(components, nodes):
+    """Generates a permission map from a conditioning point.
 
     Args:
-        components (array_like, shape=(n,)): Coordinates of point.
+        components (array_like, shape=(n,)): Coordinates of the point.
         nodes (list): Tensor product nodes.
 
     Returns:
         ndarray: Boolean array for permitted (True) and blocked (False) nodes.
     """
-    # TODO: add test for condmap_from_point
-    map_vals = _ams_point_to_bool(components, nodes)
+    # TODO: add test for permission_map_from_point
+    map_vals = _ams_condition_point_to_bool_map(components, nodes)
     return map_vals
 
 
@@ -149,11 +149,11 @@ def readfile_latticemap(file):
 
 
 # `Private` Methods
-def _ams_point_to_bool(components, nodes):
-    """Generates a condition map from a conditioning point.
+def _ams_condition_point_to_bool_map(components, nodes):
+    """Generates a permission map from a conditioning point.
 
     Args:
-        components (array_like, shape=(n,)): Coordinates of point.
+        components (array_like, shape=(n,)): Coordinates of the point.
         nodes (list): Tensor product nodes.
 
     Returns:
