@@ -31,7 +31,7 @@ class TestCondition(unittest.TestCase):
         pass
 
     # Tests associated to ConditionText
-    def test_ConditionText_print(self):
+    def test_ConditionFile_print(self):
         file = PATH_TESTFILES + 'latticemap2d_int.txt'
         cond_file = ConditionFile(file)
 
@@ -40,13 +40,13 @@ class TestCondition(unittest.TestCase):
         self.assertTrue(hasattr(cond_file, '__str__'))
         self.assertTrue(cond_file.__str__())
 
-    def test_ConditionText_gen(self):
+    def test_ConditionFile_gen(self):
         file = PATH_TESTFILES + 'latticemap2d_int.txt'
         cond_file = ConditionFile(file)
         self.assertTrue(isinstance(cond_file, Condition))
         self.assertTrue(isinstance(cond_file, ConditionFile))
 
-    def test_ConditionText_make_latticemap(self):
+    def test_ConditionFile_make_latticemap(self):
         nodes = [np.arange(-179, 181, 2), np.arange(-89, 91, 2)]
         nodes_wrong = [np.arange(-89, 90, 1), np.arange(-44, 44.5, 0.5)]
         lattice = Lattice(nodes)
@@ -61,13 +61,17 @@ class TestCondition(unittest.TestCase):
         with self.assertRaises(ValueError):
             cond_file.permission_map(lattice_wrong)
 
-    def test_ConditionText_condmap2D_simple(self):
+    def test_ConditionFile_condmap2D_simple(self):
         nodes2D = [[1, 2, 3], [4, 5, 6, 7, 8, 9, 10]]
         lattice2D = Lattice(nodes2D)
         map_vals2D = [
-            [True, False, False, False, True, True, True],
-            [True, True, False, False, False, True, True],
-            [True, True, True, False, False, False, True],
+            True, True, True,
+            True, True, True,
+            True, True, True,
+            True, True, False,
+            True, False, False,
+            False, False, False,
+            False, False, False,
         ]
         latticemap2D_true = LatticeMap(lattice2D, map_vals2D)
 
@@ -80,13 +84,17 @@ class TestCondition(unittest.TestCase):
         self.assertEqual(latticemap2D_true, perm_map)
         self.assertTrue(latticemap2D_true == perm_map)
 
-    def test_ConditionText_latticemap3D_object(self):
+    def test_ConditionFile_latticemap3D_object(self):
         nodes3D = [[1, 2, 3], [4, 5, 6, 7, 8, 9, 10], [11]]
         lattice3D = Lattice(nodes3D)
         map_vals3D = [
-            [True, False, False, False, False, True, False],
-            [True, True, False, True, False, True, True],
-            [True, False, True, False, False, False, True],
+            True, True, True,
+            False, True, False,
+            False, False, True,
+            False, True, False,
+            False, False, False,
+            True, True, False,
+            False, True, True
         ]
         latticemap3D_true = LatticeMap(lattice3D, map_vals3D)
 
@@ -135,12 +143,10 @@ class TestCondition(unittest.TestCase):
         self.assertFalse(cond_pnt == [5, 1, -1])
 
     def test_ConditionPoint__len__(self):
-        cond_pnt_1D_single = ConditionPoint(1)
         cond_pnt_1D_tuple = ConditionPoint((1,))
         cond_pnt_2D = ConditionPoint((1, 2.))
         cond_pnt_3D = ConditionPoint((3, 4.5, 6))
 
-        self.assertTrue(len(cond_pnt_1D_single) == 1)
         self.assertTrue(len(cond_pnt_1D_tuple) == 1)
         self.assertTrue(len(cond_pnt_2D) == 2)
         self.assertTrue(len(cond_pnt_3D) == 3)

@@ -34,6 +34,7 @@ import pasam.utils as utl
 _RLIB_MAXLIST = 3
 _rlib = reprlib.Repr()
 _rlib.maxlist = _RLIB_MAXLIST
+_NP_ORDER = 'F'
 
 
 # Common error messages
@@ -102,7 +103,7 @@ class ConditionPoint(Condition):
         return False
 
     def __init__(self, components):
-        self._components = np.asarray(components).ravel()
+        self._components = np.asarray(components)
 
     def __len__(self):
         return len(self._components)
@@ -147,7 +148,7 @@ class Lattice:
         return False
 
     def __init__(self, nodes):
-        self.nodes = list(np.asarray(n).ravel() for n in nodes)
+        self.nodes = list(np.asarray(n) for n in nodes)
 
     def __repr__(self):
         cls_name = type(self).__name__
@@ -222,14 +223,14 @@ class LatticeMap:
         return False
 
     def __init__(self, lattice, map_vals, dtype=None):
-        map_vals_flat = np.asarray(map_vals, dtype=dtype).ravel()
-        if lattice.nnodes != len(map_vals_flat):
+        map_vals = np.asarray(map_vals, dtype=dtype).ravel(order=_NP_ORDER)
+        if lattice.nnodes != len(map_vals):
             raise ValueError(f'Uncomparable lattice (nnodes = '
                              f'{lattice.nnodes}) with map values '
-                             f'(nval={len(map_vals_flat)})')
+                             f'(nval={len(map_vals)})')
 
         self.lattice = lattice
-        self.map_vals = map_vals_flat
+        self.map_vals = map_vals
 
     def __mul__(self, other):
         """Supports multiplication by ``numbers.Number``."""

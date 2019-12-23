@@ -29,6 +29,9 @@ import numpy as np
 # Local imports
 import pasam._settings as settings
 
+# Constants
+_NP_ORDER = 'F'
+
 
 # `Public` methods
 def permission_map_from_condition_file(file):
@@ -148,6 +151,9 @@ def readfile_latticemap(file):
     # Definition of the map_vals (defined in lines[ndim+1:])
     map_vals = [findall_num_in_str(line) for line in lines_map_vals]
 
+    # Flatten the list of values
+    map_vals = [val for vals in map_vals for val in vals]
+
     return nnodes_dim, nodes, map_vals
 
 
@@ -192,7 +198,7 @@ def _ams_val_map_to_bool_map(vals):
     INTERVAL_TRUE  = (-0.1, 0.1)
     INTERVAL_FALSE = ( 0.9, 1.1)
 
-    vals = np.asarray(vals).ravel()
+    vals = np.asarray(vals).ravel(order=_NP_ORDER)
     map_vals = np.asarray(vals, dtype=bool)
 
     ind_true = np.logical_and(vals > INTERVAL_TRUE[0], vals < INTERVAL_TRUE[1])
@@ -311,22 +317,22 @@ class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
         IND_TABLE = 1
 
         # Initialization
-        nodes = [np.asarray(n).ravel() for n in self._nodes]
-        _condition_point = self._condition_point
+        nodes = [np.asarray(n) for n in self._nodes]
+        condition_point = self._condition_point
         ratio = self._ratio
 
         # Loop in gantry direction through the lattice
         nnodes_dim = tuple(len(n) for n in self._nodes)
         map_vals = np.zeros(nnodes_dim, dtype=bool)
         for inode, node in enumerate(nodes[IND_GANTRY]):
-            v_range = abs(node - _condition_point[IND_GANTRY]) * ratio
-            v_min = _condition_point[IND_TABLE] - v_range
-            v_max = _condition_point[IND_TABLE] + v_range
+            v_range = abs(node - condition_point[IND_GANTRY]) * ratio
+            v_min = condition_point[IND_TABLE] - v_range
+            v_max = condition_point[IND_TABLE] + v_range
 
             ind_true = np.logical_and(nodes[IND_TABLE] >= v_min,
                                       nodes[IND_TABLE] <= v_max)
             map_vals[inode, ind_true] = True
-        return map_vals.ravel()
+        return map_vals.ravel(order=_NP_ORDER)
 
 
 class _TrajectoryPermissionGantryDominant3D(_TrajectoryPermission):

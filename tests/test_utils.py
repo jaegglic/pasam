@@ -101,40 +101,40 @@ class TestUtils(unittest.TestCase):
     def test_utils_readfile_latticemap2D(self):
         nnodes_dim_true = [5, 6]
         nodes_true = [[-1.5, 1.5, 5, 8, 9], [1, 2, 3, 4, 5, 6]]
-        map_vals_true = [
+        map_vals_true = np.asarray([
             [0.5, 0.5, 0.5, 0.5, 0.5],
             [0.6, 0.6, 0.6, 0.6, 0.6],
             [0.7, 0.7, 0.7, 0.7, 0.7],
             [0.7, 0.7, 0.7, 0.7, 0.7],
             [0.6, 0.6, 0.6, 0.6, 0.6],
             [0.5, 0.5, 0.5, 0.5, 0.5],
-        ]
+        ]).ravel(order='C')
 
         file = PATH_TESTFILES + 'latticemap2d_simple.txt'
         nnodes_dim_test, nodes_test, map_vals_test = utl.readfile_latticemap(file)
 
         self.assertEqual(nnodes_dim_true, nnodes_dim_test)
         self.assertEqual(nodes_true, nodes_test)
-        self.assertEqual(map_vals_true, map_vals_test)
+        self.assertTrue(np.all(map_vals_true == map_vals_test))
 
     def test_utils_readfile_latticemap3D(self):
         nnodes_dim_true = [2, 3, 2]
         nodes_true = [[-1.5, 1.5], [5, 8, 9], [-2, 3]]
-        map_vals_true = [
+        map_vals_true = np.asarray([
             [0.5, 0.5],
             [0.8, 0.8],
             [0.1, 0.1],
             [0.6, 0.6],
             [0.9, 0.9],
             [0.2, 0.2],
-        ]
+        ]).ravel(order='C')
 
         file = PATH_TESTFILES + 'latticemap3d_simple.txt'
         nnodes_dim_test, nodes_test, map_vals_test = utl.readfile_latticemap(file)
 
         self.assertEqual(nnodes_dim_true, nnodes_dim_test)
         self.assertEqual(nodes_true, nodes_test)
-        self.assertEqual(map_vals_true, map_vals_test)
+        self.assertTrue(np.all(map_vals_true == map_vals_test))
 
     def test_utils__ams_condition_point_to_bool_map(self):
         nodes = [[-2, -1, 0, 1, 2], [-2, 0, 2]]
@@ -146,22 +146,18 @@ class TestUtils(unittest.TestCase):
         }
         point = (0, 0)
         map_vals_true = np.array([
-            [1, 1, 1],
-            [0, 1, 0],
-            [0, 1, 0],
-            [0, 1, 0],
-            [1, 1, 1],
-        ], dtype=bool).ravel()
+            1, 0, 0, 0, 1,
+            1, 1, 1, 1, 1,
+            1, 0, 0, 0, 1,
+        ], dtype=bool)
         map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
         self.assertTrue(np.all(map_vals_true == map_vals_test))
         point = (-2, -2)
         map_vals_true = np.array([
-            [1, 0, 0],
-            [1, 0, 0],
-            [1, 1, 0],
-            [1, 1, 0],
-            [1, 1, 1],
-        ], dtype=bool).ravel()
+            1, 1, 1, 1, 1,
+            0, 0, 1, 1, 1,
+            0, 0, 0, 0, 1,
+        ], dtype=bool)
         map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
         self.assertTrue(np.all(map_vals_true == map_vals_test))
 
@@ -172,33 +168,31 @@ class TestUtils(unittest.TestCase):
         }
         point = (0, 0)
         map_vals_true = np.array([
-            [1, 1, 1],
-            [1, 1, 1],
-            [0, 1, 0],
-            [1, 1, 1],
-            [1, 1, 1],
-        ], dtype=bool).ravel()
+            1, 1, 0, 1, 1,
+            1, 1, 1, 1, 1,
+            1, 1, 0, 1, 1,
+        ], dtype=bool)
         map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
         self.assertTrue(np.all(map_vals_true == map_vals_test))
         point = (2, -2)
         map_vals_true = np.array([
-            [1, 1, 1],
-            [1, 1, 1],
-            [1, 1, 1],
-            [1, 1, 0],
-            [1, 0, 0],
-        ], dtype=bool).ravel()
+            1, 1, 1, 1, 1,
+            1, 1, 1, 1, 0,
+            1, 1, 1, 0, 0,
+        ], dtype=bool)
         map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
         self.assertTrue(np.all(map_vals_true == map_vals_test))
 
     def test_utils_permission_map_from_condition_file_2d(self):
         map_vals_true = np.array([
-            [1, 1, 1],
-            [1, 1, 1],
-            [1, 1, 1],
-            [1, 1, 0],
-            [1, 0, 0],
-        ], dtype=bool).ravel()
+            1, 1, 1,
+            1, 1, 1,
+            1, 1, 1,
+            1, 1, 0,
+            1, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+        ], dtype=bool)
 
         file = PATH_TESTFILES + 'condmap2d_simple.txt'
         map_vals_test = utl.permission_map_from_condition_file(file)
@@ -206,10 +200,14 @@ class TestUtils(unittest.TestCase):
 
     def test_utils_permission_map_from_condition_file_3d(self):
         map_vals_true = np.array([
-            [1, 0, 0, 0, 0, 1, 0],
-            [1, 1, 0, 1, 0, 1, 1],
-            [1, 0, 1, 0, 0, 0, 1],
-        ], dtype=bool).ravel()
+            1, 1, 1,
+            0, 1, 0,
+            0, 0, 1,
+            0, 1, 0,
+            0, 0, 0,
+            1, 1, 0,
+            0, 1, 1,
+        ], dtype=bool)
 
         file = PATH_TESTFILES + 'condmap3d_simple.txt'
         map_vals_test = utl.permission_map_from_condition_file(file)
@@ -224,9 +222,10 @@ class TestUtils(unittest.TestCase):
     #         'ratio_table_gantry_rotation': 0.5,
     #     }
     #     nodes = [np.arange(-179, 181, 2), np.arange(-89, 91, 2)]
-    #     point = (-179, 89)
+    #     point = (81, -21)
     #     map_vals = utl._ams_condition_point_to_bool_map(point, nodes, specs)
-    #     plt.imshow(map_vals.reshape((180, 90)).transpose()*1, origin='lower')
+    #     plt.imshow(map_vals.reshape((180, 90), order='F').transpose()*1,
+    #                origin='lower')
     #     plt.show()
 
 

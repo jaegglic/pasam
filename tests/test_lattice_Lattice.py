@@ -31,7 +31,7 @@ np.random.seed(_NP_SEED)
 class TestLattice(unittest.TestCase):
 
     def setUp(self):
-        self.x = [[1, 2, 3], [4.5, 5, 8]]
+        self.x = [1, 2, 3, 4.5, 5, 8]
         self.y = [-1.5, -1, 0, 5.76]
         self.z = [-100.1, -1, 1998.5]
 
@@ -229,12 +229,12 @@ class TestLattice(unittest.TestCase):
         nodes = [[-1.5, 1.5, 5, 8, 9], [1, 2, 3, 4, 5, 6]]
         lattice = Lattice(nodes)
         map_vals = [
-            [0.5, 0.5, 0.5, 0.5, 0.5],
-            [0.6, 0.6, 0.6, 0.6, 0.6],
-            [0.7, 0.7, 0.7, 0.7, 0.7],
-            [0.7, 0.7, 0.7, 0.7, 0.7],
-            [0.6, 0.6, 0.6, 0.6, 0.6],
-            [0.5, 0.5, 0.5, 0.5, 0.5],
+            0.5, 0.5, 0.5, 0.5, 0.5,
+            0.6, 0.6, 0.6, 0.6, 0.6,
+            0.7, 0.7, 0.7, 0.7, 0.7,
+            0.7, 0.7, 0.7, 0.7, 0.7,
+            0.6, 0.6, 0.6, 0.6, 0.6,
+            0.5, 0.5, 0.5, 0.5, 0.5,
         ]
         latticemap_true = LatticeMap(lattice, map_vals)
 
@@ -339,12 +339,12 @@ class TestLattice(unittest.TestCase):
         nodes = [[-1.5, 1.5], [5, 8, 9], [-2, 3]]
         lattice = Lattice(nodes)
         map_vals = [
-            [0.5, 0.5],
-            [0.8, 0.8],
-            [0.1, 0.1],
-            [0.6, 0.6],
-            [0.9, 0.9],
-            [0.2, 0.2],
+            0.5, 0.5,
+            0.8, 0.8,
+            0.1, 0.1,
+            0.6, 0.6,
+            0.9, 0.9,
+            0.2, 0.2,
         ]
         latticemap_true = LatticeMap(lattice, map_vals)
 
