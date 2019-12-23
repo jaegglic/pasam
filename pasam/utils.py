@@ -30,8 +30,8 @@ import numpy as np
 
 
 # `Public` methods
-def condmap_from_file(file):
-    """Reads a condition map from a given .txt file.
+def permission_map_from_file(file):
+    """Reads a permission map from a given .txt file.
 
     Args:
         file (str or pathlib.Path): File or filename.
@@ -41,7 +41,7 @@ def condmap_from_file(file):
 
     """
     _, _, vals = readfile_latticemap(file)
-    map_vals = _ams_vals_to_bool(vals)
+    map_vals = _ams_map_to_bool_map(vals)
     return map_vals
 
 
@@ -162,28 +162,31 @@ def _ams_point_to_bool(components, nodes):
     # TODO: add tests for _ams_point_to_bool
     # TODO: refactor _ams_point_to_bool
     # TODO: make `specs` an argument
+    # TODO: maybe rename it
     # Movement specifications
     specs = {
         'type':                         'GantryDominant',
-        'end_pts':                      (-179, 179),
         # Table rotation per gantry rotation:
         #   1: 3 neighbors (+- 2 table degrees per 2 gantry degrees)
         #   2: 5 neighbors (+- 4 table degrees per 2 gantry degrees)
-        'table_per_gantry_rot':         1,
+        'table_per_gantry_rot':         2,
     }
 
-    factory_fun = _PointTrajectoryFactory.make_pointtrajectory
-    pnt_traj = factory_fun(components, nodes, specs)
+    factory = _TrajectoryRegionFactory.make_trajectoryregion
+    pnt_traj = factory(components, nodes, specs)
 
     return pnt_traj.make_condmap()
 
 
-def _ams_vals_to_bool(vals):
-    """By default, the AMS generates files where the permitted nodes have
-    values `0` and the blocked nodes have value `1`
+def _ams_map_to_bool_map(vals):
+    """Inverts `0` to `True` and `1` to `False`.
+
+    By default, the AMS generates files where the permitted nodes have
+    values `0` and the blocked nodes have value `1`.
     """
     # TODO: add tests for _ams_vals_to_bool
     # TODO: refactor _ams_vals_to_bool
+    # TODO: maybe rename it
     _TRUE_VALS  = (-0.1, 0.1)
     _FALSE_VALS = ( 0.9, 1.1)
 
@@ -220,10 +223,11 @@ def _str2num(s):
 
 
 # `Private` Classes
-# TODO: Review and refactor all trajectories classes
+# TODO: Review and refactor all trajectories classes (evtl. rename them)
 # TODO: Test all trajectory classes
-class _PointTrajectory(abc.ABC):
-    """`_PointTrajectory` defines an abstract parent class for the machine
+# TODO: Define _PointTrajectoryGantryDominant3D
+class _TrajectoryRegion(abc.ABC):
+    """`_TrajectoryRegion` defines an abstract parent class for the machine
     movement restrictions by a point in the space.
 
     Notes:
@@ -242,30 +246,34 @@ class _PointTrajectory(abc.ABC):
         """
 
 
-class _PointTrajectoryFactory:
-    """`_PointTrajectoryFactory` produces instances of ``_PointTrajectory``
+class _TrajectoryRegionFactory:
+    """`_TrajectoryRegionFactory` produces instances of ``_PointTrajectory``
     according to the specifications.
     """
 
     @staticmethod
-    def make_pointtrajectory(components, nodes, specs):
+    def make_trajectoryregion(components, nodes, specs):
         _dim = len(nodes)
         if _dim == 2 and specs['type'] == 'GantryDominant':
-            return _PointTrajectoryGantryDominant2D(components, nodes, specs)
+            return _TrajectoryRegionGantryDominant2D(components, nodes, specs)
         else:
             msg = f'No sub-class implementation for ' \
                   f'dim={_dim} and type="{specs["type"]}"'
             raise ValueError(msg)
 
 
-class _PointTrajectoryGantryDominant2D(_PointTrajectory):
-    """`_PointTrajectoryGantryDominant2D` is the usual 2D gantry dominated
+class _TrajectoryRegionGantryDominant2D(_TrajectoryRegion):
+    """`_TrajectoryRegionGantryDominant2D` is the usual 2D gantry dominated
     movement restriction class.
 
     Args:
         components (array_like, shape=(n,)): Coordinates of point.
         nodes (list): Tensor product nodes.
+        specs (dict): Specifications for the different trajectory regions.
     """
+    # TODO: maybe rename components into restriction
+    # TODO: if doing so, we also need to do it in `_ams_point_to_bool`
+    # TODO: maybe make components (restriction) default equal to None
 
     def __init__(self, components, nodes, specs):
         self._components = components
@@ -277,6 +285,8 @@ class _PointTrajectoryGantryDominant2D(_PointTrajectory):
         _itable = 1
 
         nnodes_dim = tuple(len(n) for n in self._nodes)
+        if self._components is None:
+            return np.ones(nnodes_dim, dtype=bool)
         map_vals = np.zeros(nnodes_dim, dtype=bool)
 
         gantry_nodes = np.asarray(self._nodes[_igantry]).ravel()

@@ -139,15 +139,16 @@ class TestUtils(unittest.TestCase):
 
     # TODO: improve this test
     # TODO: remove import of numpy and matplotlib
-    def test_utils___ams_point_to_bool(self):
+    def test_utils__ams_point_to_bool(self):
         # TODO: change specs
         map_vals = utl._ams_point_to_bool(
-            components=(-1, -1),
+            components=(-9, -89),
+            # components=None,
             nodes=[np.arange(-179, 181, 2), np.arange(-89, 90, 2)]
         )
 
         plt.imshow(map_vals.transpose()*1, origin='lower')
-        plt.show()
+        # plt.show()
 
 
 if __name__ == '__main__':

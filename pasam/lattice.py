@@ -48,12 +48,13 @@ class Condition(abc.ABC):
     Notes:
         Any sub-class of `Condition` must provide an implementation of
 
-            - :meth:`make_condmap`
+            - :meth:`permission_map`
     """
 
     @abc.abstractmethod
-    def make_condmap(self, lattice):
-        """Produces a condition map with possible/impossible lattice nodes.
+    def permission_map(self, lattice):
+        """Produces a permission map with possible (True) and impossible
+        (False) lattice nodes according to the condition.
 
         Args:
             lattice (Lattice): Object defining a lattice.
@@ -81,8 +82,8 @@ class ConditionFile(Condition):
         return self.__repr__()
 
     # Definition of the abstract method in `Condition`
-    def make_condmap(self, lattice):
-        map_vals = utl.condmap_from_file(self._file)
+    def permission_map(self, lattice):
+        map_vals = utl.permission_map_from_file(self._file)
         return LatticeMap(lattice, map_vals)
 
 
@@ -115,7 +116,7 @@ class ConditionPoint(Condition):
         return self.__repr__()
 
     # Definition of the abstract method in `Condition`
-    def make_condmap(self, lattice):
+    def permission_map(self, lattice):
         map_vals = utl.condmap_from_point(self._components, lattice.nodes)
         return LatticeMap(lattice, map_vals)
 
