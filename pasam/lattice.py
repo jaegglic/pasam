@@ -48,12 +48,13 @@ class Condition(abc.ABC):
     Notes:
         Any sub-class of `Condition` must provide an implementation of
 
-            - :meth:`_make_latticemap`
+            - :meth:`permission_map`
     """
 
     @abc.abstractmethod
-    def make_condmap(self, lattice):
-        """Produces a condition map with possible/impossible lattice nodes.
+    def permission_map(self, lattice):
+        """Produces a permission map with possible (True) and impossible
+        (False) lattice nodes according to the condition.
 
         Args:
             lattice (Lattice): Object defining a lattice.
@@ -73,19 +74,55 @@ class ConditionFile(Condition):
     def __init__(self, file):
         self._file = file
 
+    def __repr__(self):
+        cls_name = type(self).__name__
+        return f'{cls_name}(file={self._file})'
+
+    def __str__(self):
+        return self.__repr__()
+
     # Definition of the abstract method in `Condition`
-    def make_condmap(self, lattice):
-        map_vals = utl.condmap_from_file(self._file)
+    def permission_map(self, lattice):
+        map_vals = utl.permission_map_from_condition_file(self._file)
         return LatticeMap(lattice, map_vals)
 
 
 class ConditionPoint(Condition):
-    # TODO: Definition of ConditionPoint
-    def __init__(self, point):
-        self._point = point
+    """`ConditionPoint` defines a condition point (vector) in a lattice grid.
+
+    Args:
+        components (array_like, shape=(n,)): Coordinate components.
+    """
+
+    def __eq__(self, other):
+        if isinstance(other, ConditionPoint):
+            return np.all(self._components == other._components)
+        elif isinstance(other, tuple) or isinstance(other, list):
+            return np.all(self._components == np.asarray(other))
+        return False
+
+    def __init__(self, components):
+        self._components = np.asarray(components).ravel()
+
+    def __len__(self):
+        return len(self._components)
+
+    def __repr__(self):
+        cls_name = type(self).__name__
+        components_repr = _rlib.repr(self._components)
+        return f'{cls_name}(components={components_repr})'
+
+    def __str__(self):
+        return self.__repr__()
 
     # Definition of the abstract method in `Condition`
-    def make_condmap(self, lattice):
+    def permission_map(self, lattice):
+        point = self._components
+        nodes = lattice.nodes
+        map_vals = utl.permission_map_from_condition_point(point, nodes)
+        return LatticeMap(lattice, map_vals)
+
+    def where_in_lattice(self, lattice):
         pass
 
 
@@ -102,15 +139,15 @@ class Lattice:
 
     """
 
-    def __init__(self, nodes):
-        self.nodes = list(np.asarray(n).ravel() for n in nodes)
-
     def __eq__(self, other):
         if isinstance(other, Lattice) and self.nnodes_dim == other.nnodes_dim:
             nodes_eq = [np.all(n_sel == n_oth)
                         for n_sel, n_oth in zip(self.nodes, other.nodes)]
             return all(nodes_eq)
         return False
+
+    def __init__(self, nodes):
+        self.nodes = list(np.asarray(n).ravel() for n in nodes)
 
     def __repr__(self):
         cls_name = type(self).__name__

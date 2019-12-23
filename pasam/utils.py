@@ -3,9 +3,11 @@
 
 Generic methods
 ---------------
-    - :func:`condmap_from_file`: Condition map from txt file.
     - :func:`findall_num_in_str`: Extracts all numbers from a string.
-    - :func:`readlines_`: Reads txt file.
+    - :func:`permission_map_from_file`: Permission map from txt file.
+    - :func:`permission_map_from_point`: Permission map from conditioning point.
+    - :func:`readfile_latticemap`: Reads a latticemap file.
+    - :func:`readlines_`: Reads txt file (possibility to remove empty lines).
 """
 
 # -------------------------------------------------------------------------
@@ -19,15 +21,18 @@ Generic methods
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # Standard library
+import abc
 import re
 from pathlib import Path
 # Third party requirements
 import numpy as np
 # Local imports
+import pasam._settings as settings
 
 
-def condmap_from_file(file):
-    """Reads a condition map from a given .txt file.
+# `Public` methods
+def permission_map_from_condition_file(file):
+    """Reads a permission map from a given .txt file.
 
     Args:
         file (str or pathlib.Path): File or filename.
@@ -37,7 +42,24 @@ def condmap_from_file(file):
 
     """
     _, _, vals = readfile_latticemap(file)
-    map_vals = _ams_vals_to_bool(vals)
+
+    # !!! Values are inverted in the ams map !!!
+    map_vals = _ams_val_map_to_bool_map(vals)
+
+    return map_vals
+
+
+def permission_map_from_condition_point(point, nodes):
+    """Generates a permission map from a conditioning point.
+
+    Args:
+        point (array_like, shape=(n,)): Coordinates of the condition point.
+        nodes (list): Tensor product nodes.
+
+    Returns:
+        ndarray: Boolean array for permitted (True) and blocked (False) nodes.
+    """
+    map_vals = _ams_condition_point_to_bool_map(point, nodes)
     return map_vals
 
 
@@ -48,7 +70,7 @@ def findall_num_in_str(s):
         s (str): Input string containing numbers
 
     Returns:
-        list: List of numbers (``float`` or ``int``)
+        list: List of numbers (`float` or `int`)
     """
     pat = r'-?[0-9]+\.?[0-9]*'
     nums = re.findall(pat, s)
@@ -69,7 +91,7 @@ def readlines_(file, remove_blank_lines=False, hint=-1):
             characters) of all lines to be read.
 
     Returns:
-        list: All non empty lines of text file
+        list(str): All non empty lines of text file
     """
     if isinstance(file, Path):
         file = str(file)
@@ -129,18 +151,52 @@ def readfile_latticemap(file):
     return nnodes_dim, nodes, map_vals
 
 
-def _ams_vals_to_bool(vals):
-    """ By default, the AMS generates files where the permitted nodes have
-    values `0` and the blocked nodes have value `1`
+# `Private` Methods
+def _ams_condition_point_to_bool_map(point, nodes, specs=None):
+    """Generates a permission map from a conditioning point.
+
+    Args:
+        point (array_like, shape=(n,)): Coordinates of the condition point.
+        nodes (list): Tensor product nodes.
+        specs (dict, optional): Specifications for the trajectory permission.
+            Fields are:
+
+            - 'type': Type of trajectory permission (`str`).
+            - 'ndim': Number of dimensions (`int`).
+            - ... (type related specifications)
+
+    Returns:
+        ndarray, shape=(n,): Boolean array for permitted (True) and blocked
+            (False) nodes.
     """
-    _TRUE_VALS  = (-0.1, 0.1)
-    _FALSE_VALS = ( 0.9, 1.1)
+    if not specs:
+        specs = settings.AMS_TRAJ_PERM_SPECS
+
+    # Specifications for the trajectory restriction by a point
+    specs['condition_point'] = point
+    specs['nodes'] = nodes
+
+    factory = _TrajectoryPermissionFactory
+    traj_perm = factory.make(specs)
+
+    return traj_perm.permission_map()
+
+
+def _ams_val_map_to_bool_map(vals):
+    """Inverts `0` to `True` and `1` to `False`.
+
+    By default, the AMS generates files where the permitted nodes have
+    values `0` and the blocked nodes have value `1`.
+    """
+    # Value intervals for permitted (True) and blocked (False) nodes
+    INTERVAL_TRUE  = (-0.1, 0.1)
+    INTERVAL_FALSE = ( 0.9, 1.1)
 
     vals = np.asarray(vals).ravel()
     map_vals = np.asarray(vals, dtype=bool)
 
-    ind_true = np.logical_and(vals > _TRUE_VALS[0], vals < _TRUE_VALS[1])
-    ind_false = np.logical_and(vals > _FALSE_VALS[0], vals < _FALSE_VALS[1])
+    ind_true = np.logical_and(vals > INTERVAL_TRUE[0], vals < INTERVAL_TRUE[1])
+    ind_false = np.logical_and(vals > INTERVAL_FALSE[0], vals < INTERVAL_FALSE[1])
 
     # Check whether all values have been covered
     if np.sum(np.logical_xor(ind_true, ind_false)) != len(map_vals):
@@ -148,8 +204,10 @@ def _ams_vals_to_bool(vals):
         ind = np.where(ind_not_unique)[0]
         raise ValueError(f'Values(s) {vals[ind]} are not uniquely identified')
 
+    # Tag nodes according to the permission
     map_vals[ind_true] = True
     map_vals[ind_false] = False
+
     return map_vals
 
 
@@ -160,10 +218,119 @@ def _is_blank(s):
 
 
 def _str2num(s):
-    """Generates ``int`` or ``float`` from a string.
+    """Generates `int` or `float` from a string.
     """
     try:
         return int(s)
     except ValueError:
         return float(s)
+
+
+# `Private` Classes
+class _TrajectoryPermission(abc.ABC):
+    """`_TrajectoryPermission` defines an abstract parent class for the machine
+    movement restrictions by a point in the space.
+
+    Notes:
+        Any sub-class of `_PointTrajectory` must provide an implementation of
+
+            - :meth:`permission_map`
+    """
+    
+    @abc.abstractmethod
+    def permission_map(self):
+        """Generates a condition map from a conditioning point.
+
+        Returns:
+            ndarray: Boolean array for permitted (True) and blocked (False)
+                nodes.
+        """
+
+
+class _TrajectoryPermissionFactory:
+    """`_TrajectoryPermissionFactory` produces instances of
+    :class:`_PointTrajectory` according to the specifications.
+    """
+
+    @staticmethod
+    def make(specs):
+        """Creates `_TrajectoryPermission` objects.
+
+        Args:
+            specs (dict): Specifications for the trajectory permission. Fields
+                are:
+
+                - 'type': Type of trajectory permission (`str`).
+                - 'ndim': Number of dimensions (`int`).
+                - ... (type related specifications)
+
+        Returns:
+            _TrajectoryPermission: Trajectory permission object.
+        """
+        type = specs['type']
+        ndim = specs['ndim']
+        if ndim == 2 and type == 'GantryDominant':
+            return _TrajectoryPermissionGantryDominant2D(specs)
+        else:
+            msg = f'No implemented trajectory permission for ' \
+                  f'dim={ndim} and type="{type}"'
+            raise ValueError(msg)
+
+
+class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
+    """`_TrajectoryPermissionGantryDominant2D` is the usual 2D gantry dominated
+    movement restriction class.
+
+    Args:
+        specs (dict): Specifications for the trajectory permission. Fields are:
+
+        - 'nodes': Tensor product nodes (`list`).
+        - 'condition_point': Condition point (`tuple` or `None`)
+        - 'ratio_table_gantry_rotation': Maximum allowed ratio between table
+            and gantry angle rotation.
+    """
+
+    def __init__(self, specs):
+        self._nodes = specs['nodes']
+        self._condition_point = specs['condition_point']
+        self._ratio = specs['ratio_table_gantry_rotation']
+
+    def permission_map(self):
+        nnodes_dim = tuple(len(n) for n in self._nodes)
+        if self._condition_point is None:
+            return np.ones(nnodes_dim, dtype=bool)
+
+        return self._permission_map_from_condition_point()
+
+    def _permission_map_from_condition_point(self):
+        """Returns a two-dimensional permission map according to a conditioning
+        point.
+        """
+        # Gantry/Table indices in self._nodes and self._condition_point
+        IND_GANTRY = 0
+        IND_TABLE = 1
+
+        # Initialization
+        nodes = [np.asarray(n).ravel() for n in self._nodes]
+        _condition_point = self._condition_point
+        ratio = self._ratio
+
+        # Loop in gantry direction through the lattice
+        nnodes_dim = tuple(len(n) for n in self._nodes)
+        map_vals = np.zeros(nnodes_dim, dtype=bool)
+        for inode, node in enumerate(nodes[IND_GANTRY]):
+            v_range = abs(node - _condition_point[IND_GANTRY]) * ratio
+            v_min = _condition_point[IND_TABLE] - v_range
+            v_max = _condition_point[IND_TABLE] + v_range
+
+            ind_true = np.logical_and(nodes[IND_TABLE] >= v_min,
+                                      nodes[IND_TABLE] <= v_max)
+            map_vals[inode, ind_true] = True
+        return map_vals.ravel()
+
+
+class _TrajectoryPermissionGantryDominant3D(_TrajectoryPermission):
+    # TODO: Define _TrajectoryPermissionGantryDominant3D
+    # TODO: Add tests for _TrajectoryPermissionGantryDominant3D
+    pass
 
