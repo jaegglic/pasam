@@ -83,7 +83,7 @@ class ConditionFile(Condition):
 
     # Definition of the abstract method in `Condition`
     def permission_map(self, lattice):
-        map_vals = utl.permission_map_from_file(self._file)
+        map_vals = utl.permission_map_from_condition_file(self._file)
         return LatticeMap(lattice, map_vals)
 
 
@@ -117,7 +117,9 @@ class ConditionPoint(Condition):
 
     # Definition of the abstract method in `Condition`
     def permission_map(self, lattice):
-        map_vals = utl.condmap_from_point(self._components, lattice.nodes)
+        point = self._components
+        nodes = lattice.nodes
+        map_vals = utl.permission_map_from_condition_point(point, nodes)
         return LatticeMap(lattice, map_vals)
 
     def where_in_lattice(self, lattice):

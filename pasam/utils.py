@@ -31,7 +31,7 @@ import pasam._settings as settings
 
 
 # `Public` methods
-def permission_map_from_file(file):
+def permission_map_from_condition_file(file):
     """Reads a permission map from a given .txt file.
 
     Args:
@@ -42,22 +42,24 @@ def permission_map_from_file(file):
 
     """
     _, _, vals = readfile_latticemap(file)
+
+    # !!! Values are inverted in the ams map !!!
     map_vals = _ams_val_map_to_bool_map(vals)
+
     return map_vals
 
 
-def permission_map_from_point(components, nodes):
+def permission_map_from_condition_point(point, nodes):
     """Generates a permission map from a conditioning point.
 
     Args:
-        components (array_like, shape=(n,)): Coordinates of the point.
+        point (array_like, shape=(n,)): Coordinates of the condition point.
         nodes (list): Tensor product nodes.
 
     Returns:
         ndarray: Boolean array for permitted (True) and blocked (False) nodes.
     """
-    # TODO: add test for permission_map_from_point
-    map_vals = _ams_condition_point_to_bool_map(components, nodes)
+    map_vals = _ams_condition_point_to_bool_map(point, nodes)
     return map_vals
 
 
@@ -150,23 +152,32 @@ def readfile_latticemap(file):
 
 
 # `Private` Methods
-def _ams_condition_point_to_bool_map(components, nodes):
+def _ams_condition_point_to_bool_map(point, nodes, specs=None):
     """Generates a permission map from a conditioning point.
 
     Args:
-        components (array_like, shape=(n,)): Coordinates of the point.
+        point (array_like, shape=(n,)): Coordinates of the condition point.
         nodes (list): Tensor product nodes.
+        specs (dict, optional): Specifications for the trajectory permission.
+            Fields are:
+
+            - 'type': Type of trajectory permission (`str`).
+            - 'ndim': Number of dimensions (`int`).
+            - ... (type related specifications)
 
     Returns:
-        ndarray: Boolean array for permitted (True) and blocked (False) nodes.
+        ndarray, shape=(n,): Boolean array for permitted (True) and blocked
+            (False) nodes.
     """
-    # TODO: add tests for _ams_condition_point_to_bool_map
-    specs = settings.AMS_TRAJ_PERM_SPECS
-    specs['condition_point_components'] = components
+    if not specs:
+        specs = settings.AMS_TRAJ_PERM_SPECS
+
+    # Specifications for the trajectory restriction by a point
+    specs['condition_point'] = point
     specs['nodes'] = nodes
 
     factory = _TrajectoryPermissionFactory
-    traj_perm = factory.make(settings.AMS_TRAJ_PERM_SPECS)
+    traj_perm = factory.make(specs)
 
     return traj_perm.permission_map()
 
@@ -177,7 +188,6 @@ def _ams_val_map_to_bool_map(vals):
     By default, the AMS generates files where the permitted nodes have
     values `0` and the blocked nodes have value `1`.
     """
-    # TODO: add tests for _ams_val_map_to_bool_map
     # Value intervals for permitted (True) and blocked (False) nodes
     INTERVAL_TRUE  = (-0.1, 0.1)
     INTERVAL_FALSE = ( 0.9, 1.1)
@@ -217,7 +227,6 @@ def _str2num(s):
 
 
 # `Private` Classes
-# TODO: Test all trajectory classes
 class _TrajectoryPermission(abc.ABC):
     """`_TrajectoryPermission` defines an abstract parent class for the machine
     movement restrictions by a point in the space.
@@ -276,20 +285,19 @@ class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
         specs (dict): Specifications for the trajectory permission. Fields are:
 
         - 'nodes': Tensor product nodes (`list`).
-        - 'condition_point_components': Components of condition_point (`tuple`
-            or `None`)
+        - 'condition_point': Condition point (`tuple` or `None`)
         - 'ratio_table_gantry_rotation': Maximum allowed ratio between table
             and gantry angle rotation.
     """
 
     def __init__(self, specs):
         self._nodes = specs['nodes']
-        self._components = specs['condition_point_components']
+        self._condition_point = specs['condition_point']
         self._ratio = specs['ratio_table_gantry_rotation']
 
     def permission_map(self):
         nnodes_dim = tuple(len(n) for n in self._nodes)
-        if self._components is None:
+        if self._condition_point is None:
             return np.ones(nnodes_dim, dtype=bool)
 
         return self._permission_map_from_condition_point()
@@ -298,31 +306,31 @@ class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
         """Returns a two-dimensional permission map according to a conditioning
         point.
         """
-        # Gantry/Table indices in self._nodes and self._components
+        # Gantry/Table indices in self._nodes and self._condition_point
         IND_GANTRY = 0
         IND_TABLE = 1
 
         # Initialization
         nodes = [np.asarray(n).ravel() for n in self._nodes]
-        components = self._components
+        _condition_point = self._condition_point
         ratio = self._ratio
 
         # Loop in gantry direction through the lattice
         nnodes_dim = tuple(len(n) for n in self._nodes)
         map_vals = np.zeros(nnodes_dim, dtype=bool)
         for inode, node in enumerate(nodes[IND_GANTRY]):
-            val_range = abs(node - components[IND_GANTRY]) * ratio
-            val_min = components[IND_TABLE] - val_range
-            val_max = components[IND_TABLE] + val_range
+            v_range = abs(node - _condition_point[IND_GANTRY]) * ratio
+            v_min = _condition_point[IND_TABLE] - v_range
+            v_max = _condition_point[IND_TABLE] + v_range
 
-            ind_min = np.argmin(np.abs(nodes[IND_TABLE] - val_min))
-            ind_max = np.argmin(np.abs(nodes[IND_TABLE] - val_max))
-
-            map_vals[inode, ind_min:ind_max+1] = True
-        return map_vals
+            ind_true = np.logical_and(nodes[IND_TABLE] >= v_min,
+                                      nodes[IND_TABLE] <= v_max)
+            map_vals[inode, ind_true] = True
+        return map_vals.ravel()
 
 
 class _TrajectoryPermissionGantryDominant3D(_TrajectoryPermission):
     # TODO: Define _TrajectoryPermissionGantryDominant3D
+    # TODO: Add tests for _TrajectoryPermissionGantryDominant3D
     pass
 

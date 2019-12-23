@@ -19,11 +19,9 @@ Unit tests for the utilities in `pasam.utils.py`.
 import unittest
 # Third party requirements
 import numpy as np
-import matplotlib.pyplot as plt
 # Local imports
 import pasam.utils as utl
 from pasam._paths import PATH_TESTFILES
-import pasam._settings as settings
 
 
 class TestUtils(unittest.TestCase):
@@ -138,21 +136,98 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(nodes_true, nodes_test)
         self.assertEqual(map_vals_true, map_vals_test)
 
-    # TODO: improve this test
-    # TODO: remove import of numpy and matplotlib
-    def test_utils__ams_condition_point_to_bool(self):
-        # TODO: change specs
-        map_vals = utl._ams_condition_point_to_bool_map(
-            components=(-9, -89),
-            # components=None,
-            nodes=[np.arange(-179, 181, 2), np.arange(-89, 90, 2)]
-        )
+    def test_utils__ams_condition_point_to_bool_map(self):
+        nodes = [[-2, -1, 0, 1, 2], [-2, 0, 2]]
 
-        plt.imshow(map_vals.transpose()*1, origin='lower')
-        # plt.show()
+        specs = {
+            'type': 'GantryDominant',
+            'ndim': 2,
+            'ratio_table_gantry_rotation': 1.0,
+        }
+        point = (0, 0)
+        map_vals_true = np.array([
+            [1, 1, 1],
+            [0, 1, 0],
+            [0, 1, 0],
+            [0, 1, 0],
+            [1, 1, 1],
+        ], dtype=bool).ravel()
+        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
+        self.assertTrue(np.all(map_vals_true == map_vals_test))
+        point = (-2, -2)
+        map_vals_true = np.array([
+            [1, 0, 0],
+            [1, 0, 0],
+            [1, 1, 0],
+            [1, 1, 0],
+            [1, 1, 1],
+        ], dtype=bool).ravel()
+        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
+        self.assertTrue(np.all(map_vals_true == map_vals_test))
 
-    def test_utils__ams_val_map_to_bool_map(self):
-        pass
+        specs = {
+            'type': 'GantryDominant',
+            'ndim': 2,
+            'ratio_table_gantry_rotation': 2.0,
+        }
+        point = (0, 0)
+        map_vals_true = np.array([
+            [1, 1, 1],
+            [1, 1, 1],
+            [0, 1, 0],
+            [1, 1, 1],
+            [1, 1, 1],
+        ], dtype=bool).ravel()
+        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
+        self.assertTrue(np.all(map_vals_true == map_vals_test))
+        point = (2, -2)
+        map_vals_true = np.array([
+            [1, 1, 1],
+            [1, 1, 1],
+            [1, 1, 1],
+            [1, 1, 0],
+            [1, 0, 0],
+        ], dtype=bool).ravel()
+        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
+        self.assertTrue(np.all(map_vals_true == map_vals_test))
+
+    def test_utils_permission_map_from_condition_file_2d(self):
+        map_vals_true = np.array([
+            [1, 1, 1],
+            [1, 1, 1],
+            [1, 1, 1],
+            [1, 1, 0],
+            [1, 0, 0],
+        ], dtype=bool).ravel()
+
+        file = PATH_TESTFILES + 'condmap2d_simple.txt'
+        map_vals_test = utl.permission_map_from_condition_file(file)
+        self.assertTrue(np.all(map_vals_true == map_vals_test))
+
+    def test_utils_permission_map_from_condition_file_3d(self):
+        map_vals_true = np.array([
+            [1, 0, 0, 0, 0, 1, 0],
+            [1, 1, 0, 1, 0, 1, 1],
+            [1, 0, 1, 0, 0, 0, 1],
+        ], dtype=bool).ravel()
+
+        file = PATH_TESTFILES + 'condmap3d_simple.txt'
+        map_vals_test = utl.permission_map_from_condition_file(file)
+        self.assertTrue(np.all(map_vals_true == map_vals_test))
+
+    # # Test plot
+    # def test_plot_utils__ams_condition_point_to_bool_map_(self):
+    #     import matplotlib.pyplot as plt
+    #     specs = {
+    #         'type': 'GantryDominant',
+    #         'ndim': 2,
+    #         'ratio_table_gantry_rotation': 0.5,
+    #     }
+    #     nodes = [np.arange(-179, 181, 2), np.arange(-89, 91, 2)]
+    #     point = (-179, 89)
+    #     map_vals = utl._ams_condition_point_to_bool_map(point, nodes, specs)
+    #     plt.imshow(map_vals.reshape((180, 90)).transpose()*1, origin='lower')
+    #     plt.show()
 
 
 if __name__ == '__main__':
