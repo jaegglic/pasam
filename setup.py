@@ -24,7 +24,7 @@ def test_suite():
 setup(
     name='pasam',
     packages=find_namespace_packages(),
-    version='0.1.4',
+    version='0.1.5',
     description='Path sampling package',
     long_description=long_description,
     long_description_content_type="text/x-rst",
