@@ -5,6 +5,11 @@ from distutils.core import setup
 from setuptools import find_namespace_packages
 import unittest
 
+# Install Requires Version
+_NUMPY_VERSION                  = '1.15.4'
+_SPHINX_VERSION_MIN             = '2.2.2'
+_SPHINX_RTD_THEME_VERSION_MIN   = '0.4.3'
+
 # Load long description from the README.rst file
 with open("README.rst", "r") as readme:
     long_description = readme.read()
@@ -29,6 +34,11 @@ setup(
     url='https://github.com/jaegglic/pasam',
     keywords=['sampling', 'radiotherapy', 'delivery path'],
     python_requires='>=3.6',
+    install_requires=[
+        f'numpy=={_NUMPY_VERSION}',
+        f'sphinx>={_SPHINX_VERSION_MIN}',
+        f'sphinx_rtd_theme>={_SPHINX_RTD_THEME_VERSION_MIN}',
+    ],
     test_suite='setup.test_suite',
     classifiers=[
         'Development Status :: 4 - Beta',
