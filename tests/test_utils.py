@@ -213,6 +213,17 @@ class TestUtils(unittest.TestCase):
         map_vals_test = utl.permission_map_from_condition_file(file)
         self.assertTrue(np.all(map_vals_true == map_vals_test))
 
+    def test_utils_isincreasing(self):
+        self.assertTrue(utl.isincreasing([1]))
+        self.assertTrue(utl.isincreasing([1, 2, 3, 4, 5]))
+        self.assertTrue(utl.isincreasing([-0.110001, -0.11000001, -0.11]))
+        self.assertTrue(utl.isincreasing([[1, 3], [2, 4]]))
+        self.assertTrue(utl.isincreasing([1, 2, 3, 4, 4], strictly=False))
+
+        self.assertFalse(utl.isincreasing([-0.11, -0.1100001, -0.110001]))
+        self.assertFalse(utl.isincreasing([1, 2, 3, 4, 4]))
+
+
     # # Test plot
     # def test_plot_utils__ams_condition_point_to_bool_map_(self):
     #     import matplotlib.pyplot as plt

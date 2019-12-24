@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Definitions of useful tools.
+"""Definitions of some package tools.
 
 Generic methods
 ---------------
     - :func:`findall_num_in_str`: Extracts all numbers from a string.
+    - :func:`isincreasing`: Checks if a sequence of values increases.
     - :func:`permission_map_from_file`: Permission map from txt file.
     - :func:`permission_map_from_point`: Permission map from conditioning point.
     - :func:`readfile_latticemap`: Reads a latticemap file.
@@ -27,6 +28,7 @@ from pathlib import Path
 # Third party requirements
 import numpy as np
 # Local imports
+import pasam._messages as msg
 import pasam._settings as settings
 
 # Constants
@@ -34,6 +36,38 @@ _NP_ORDER = 'F'
 
 
 # `Public` methods
+def findall_num_in_str(s):
+    """Extracts all numbers in a string.
+
+    Args:
+        s (str): Input string containing numbers
+
+    Returns:
+        list: List of numbers (`float` or `int`)
+    """
+    pat = r'-?[0-9]+\.?[0-9]*'
+    nums = re.findall(pat, s)
+    return [_str2num(n) for n in nums]
+
+
+def isincreasing(vals, strictly=True):
+    """Checks if a set of values is increasing.
+
+    Args:
+        vals (array_like, shape=(n,)): Set of values
+        strictly (bool, optional): Strictly (`strictly=True`) or simply
+            (`strictly=False`) increasing.
+
+    Returns:
+        bool
+    """
+    vals = np.asarray(vals).ravel(order=_NP_ORDER)
+    if strictly:
+        return np.all(vals[:-1] < vals[1:])
+    else:
+        return np.all(vals[:-1] <= vals[1:])
+
+
 def permission_map_from_condition_file(file):
     """Reads a permission map from a given .txt file.
 
@@ -66,20 +100,6 @@ def permission_map_from_condition_point(point, nodes):
     return map_vals
 
 
-def findall_num_in_str(s):
-    """Extracts all numbers in a string.
-
-    Args:
-        s (str): Input string containing numbers
-
-    Returns:
-        list: List of numbers (`float` or `int`)
-    """
-    pat = r'-?[0-9]+\.?[0-9]*'
-    nums = re.findall(pat, s)
-    return [_str2num(n) for n in nums]
-
-
 def readlines_(file, remove_blank_lines=False, hint=-1):
     """Reading txt file (similar to builtin ``readlines``).
 
@@ -110,7 +130,7 @@ def readlines_(file, remove_blank_lines=False, hint=-1):
 def readfile_latticemap(file):
     """Reads a latticemap file.
 
-    The structure of the txt file is as follows::
+    The structure of the latticemap file is as follows::
 
             ----------------------------------------
             | <nnode_dim>                          |
@@ -152,7 +172,7 @@ def readfile_latticemap(file):
     map_vals = [findall_num_in_str(line) for line in lines_map_vals]
 
     # Flatten the list of values
-    map_vals = [val for vals in map_vals for val in vals]
+    map_vals = np.asarray([val for vals in map_vals for val in vals])
 
     return nnodes_dim, nodes, map_vals
 
@@ -273,14 +293,12 @@ class _TrajectoryPermissionFactory:
         Returns:
             _TrajectoryPermission: Trajectory permission object.
         """
-        type = specs['type']
+        type_ = specs['type']
         ndim = specs['ndim']
-        if ndim == 2 and type == 'GantryDominant':
+        if ndim == 2 and type_ == 'GantryDominant':
             return _TrajectoryPermissionGantryDominant2D(specs)
         else:
-            msg = f'No implemented trajectory permission for ' \
-                  f'dim={ndim} and type="{type}"'
-            raise ValueError(msg)
+            raise ValueError(msg.err0000(ndim, type_))
 
 
 class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):

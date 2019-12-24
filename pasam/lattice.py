@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Definitions of the lattice grid elements in 2D and 3D.
+"""Definitions of the lattice grid elements and the associated objects.
 
 Classes
 -------
+    - :class:`Condition`: (abstract) Parent class for each condition.
+    - :class:`ConditionFile`: Condition from a file.
+    - :class:`ConditionPoint`: Condition from a condition point.
     - :class:`Lattice`: Lattice nodes in 1-, 2-, or 3-dimensions
     - :class:`LatticeMap`: Value map associated to a lattice
 
@@ -28,6 +31,7 @@ import numbers
 # Third party requirements
 import numpy as np
 # Local imports
+import pasam._messages as msg
 import pasam.utils as utl
 
 # Constants and Variables
@@ -37,11 +41,7 @@ _rlib.maxlist = _RLIB_MAXLIST
 _NP_ORDER = 'F'
 
 
-# Common error messages
-def _errmsg_incons_lat(file):
-    return f'Inconsistent lattice in file {file}'
-
-
+# Condition Objects
 class Condition(abc.ABC):
     """`Condition` defines an abstract parent class for any restriction in the
     path sampling.
@@ -127,10 +127,12 @@ class ConditionPoint(Condition):
         pass
 
 
+# Lattice and LatticeMap Objects
 class Lattice:
     """`Lattice` defines the computational lattice.
 
-    A lattice is defined by a two- or three-dimensional regular grid of nodes.
+    A lattice is defined by a one-, two-, or three-dimensional regular grid of
+    nodes. The nodes in one dimension is a set of strictly increasing values.
 
     Args:
         nodes (list): Tensor product nodes.
@@ -148,7 +150,10 @@ class Lattice:
         return False
 
     def __init__(self, nodes):
-        self.nodes = list(np.asarray(n) for n in nodes)
+        nodes = list(np.asarray(n) for n in nodes)
+        if not all(utl.isincreasing(n, strictly=True) for n in nodes):
+            raise ValueError(msg.err1001(nodes))
+        self.nodes = nodes
 
     def __repr__(self):
         cls_name = type(self).__name__
@@ -160,10 +165,10 @@ class Lattice:
 
     @property
     def ndim(self):
-        """The number of dimensions for the lattice.
+        """The dimensionality of the lattice.
 
         Returns:
-            int: Dimensionality of the lattice.
+            int
         """
         return len(self.nodes)
 
@@ -172,7 +177,7 @@ class Lattice:
         """The total number of nodes in the lattice.
 
         Returns:
-            tuple: Total number of nodes in each dimension.
+            tuple
         """
         return tuple(len(n) for n in self.nodes)
 
@@ -181,13 +186,13 @@ class Lattice:
         """The total number of nodes in the lattice.
 
         Returns:
-            int: Total number of nodes.
+            int
         """
         return int(np.prod(self.nnodes_dim))
 
 
 class LatticeMap:
-    """`LatticeMap` defines a value map of associated to a ``Lattice``.
+    """`LatticeMap` defines a value map associated to a :class:`Lattice`.
 
     Args:
         lattice (Lattice): Object defining a lattice.
@@ -204,12 +209,13 @@ class LatticeMap:
     """
 
     def __add__(self, other):
-        """Supports ``LatticeMap + LatticeMap`` as well as ``LatticeMap +
-        number.Number``"""
+        """Supports `LatticeMap` + `LatticeMap` as well as `LatticeMap` +
+        `number.Number`"""
         if isinstance(other, LatticeMap):
             if self.lattice is other.lattice or self.lattice == other.lattice:
                 return LatticeMap(self.lattice, self.map_vals + other.map_vals)
-            raise ValueError('unsupported operation + for different Lattice objects')
+            else:
+                raise ValueError(msg.err1002)
 
         elif isinstance(other, numbers.Number):
             return LatticeMap(self.lattice, self.map_vals + other)
@@ -225,9 +231,7 @@ class LatticeMap:
     def __init__(self, lattice, map_vals, dtype=None):
         map_vals = np.asarray(map_vals, dtype=dtype).ravel(order=_NP_ORDER)
         if lattice.nnodes != len(map_vals):
-            raise ValueError(f'Uncomparable lattice (nnodes = '
-                             f'{lattice.nnodes}) with map values '
-                             f'(nval={len(map_vals)})')
+            raise ValueError(msg.err1003(lattice.nnodes, len(map_vals)))
 
         self.lattice = lattice
         self.map_vals = map_vals
@@ -256,10 +260,10 @@ class LatticeMap:
 
     @property
     def ndim(self):
-        """The number of dimensions for the lattic map.
+        """The dimensionality of the lattice map.
 
         Returns:
-            int: Dimensionality of the lattice map.
+            int
         """
         return self.lattice.ndim
 
@@ -268,7 +272,7 @@ class LatticeMap:
         """Produces lattice map objects from .txt files.
 
         The structure of a latticemap text file is reported in the function
-        `utl.read_latticemap_file`.
+        :func:`pasam.utils.readfile_ams_latticemap`.
 
         Args:
             file (str or pathlib.Path): File or filename.
@@ -278,12 +282,12 @@ class LatticeMap:
             LatticeMap: Object defining a lattice map
         """
         _, nodes, map_vals = utl.readfile_latticemap(file)
-        lattice_file = Lattice(nodes)
+        lattice_from_file = Lattice(nodes)
 
         if not lattice:
-            lattice = lattice_file
-        elif lattice != lattice_file:
-            raise ValueError(_errmsg_incons_lat(file))
+            lattice = lattice_from_file
+        elif lattice != lattice_from_file:
+            raise ValueError(msg.err1000(file, lattice))
 
         return cls(lattice, map_vals)
 
