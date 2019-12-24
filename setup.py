@@ -18,11 +18,11 @@ def test_suite():
 setup(
     name='pasam-package',
     packages=find_namespace_packages(),
-    version='0.1.3',
+    version='0.1.4',
     description='Path sampling package',
     long_description=long_description,
     long_description_content_type="text/x-rst",
-    author='Stefanie Marti, Christoph Jäggli',
+    author='Stefanie Marti, Christoph Jaeggli',
     license='BSD',
     author_email='stefanie.marti@insel.ch, christoph.jaeggli@insel.ch',
     url='https://github.com/IDSC-io/pasam',
