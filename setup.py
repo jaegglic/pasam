@@ -22,7 +22,7 @@ def test_suite():
 
 
 setup(
-    name='pasam-jaegglic',
+    name='pasam',
     packages=find_namespace_packages(),
     version='0.1.4',
     description='Path sampling package',
