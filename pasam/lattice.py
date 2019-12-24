@@ -43,7 +43,7 @@ _NP_ORDER = 'F'
 
 # Condition Objects
 class Condition(abc.ABC):
-    """`Condition` defines an abstract parent class for any restriction in the
+    """`Condition` defines an abstract parent class for restrictions in the
     path sampling.
 
     Notes:
@@ -54,8 +54,8 @@ class Condition(abc.ABC):
 
     @abc.abstractmethod
     def permission_map(self, lattice):
-        """Produces a permission map with possible (True) and impossible
-        (False) lattice nodes according to the condition.
+        """Produces a permission map with permitted (``True``) and blocked
+        (``False``) lattice nodes.
 
         Args:
             lattice (Lattice): Object defining a lattice.
@@ -89,7 +89,7 @@ class ConditionFile(Condition):
 
 
 class ConditionPoint(Condition):
-    """`ConditionPoint` defines a condition point (vector) in a lattice grid.
+    """`ConditionPoint` defines a condition point in a lattice grid.
 
     Args:
         components (array_like, shape=(n,)): Coordinate components.
@@ -123,9 +123,6 @@ class ConditionPoint(Condition):
         map_vals = utl.permission_map_from_condition_point(point, nodes)
         return LatticeMap(lattice, map_vals)
 
-    def where_in_lattice(self, lattice):
-        pass
-
 
 # Lattice and LatticeMap Objects
 class Lattice:
@@ -151,7 +148,7 @@ class Lattice:
 
     def __init__(self, nodes):
         nodes = list(np.asarray(n) for n in nodes)
-        if not all(utl.isincreasing(n, strictly=True) for n in nodes):
+        if not all(utl.isincreasing(n, strict=True) for n in nodes):
             raise ValueError(msg.err1001(nodes))
         self.nodes = nodes
 

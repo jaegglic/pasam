@@ -43,15 +43,15 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(numbers, [-1.1, 23, 555.8, 2, 3.478])
 
     def test_utils__is_blank(self):
-        self.assertTrue(utl._is_blank('    '))
-        self.assertTrue(utl._is_blank('  \t  '))
-        self.assertTrue(utl._is_blank('  \t \n'))
-        self.assertTrue(utl._is_blank('  \t \n    \t   '))
-        self.assertFalse(utl._is_blank('  9    '))
-        self.assertFalse(utl._is_blank('  asdfasf    '))
-        self.assertFalse(utl._is_blank('  \t \n    .'))
-        self.assertFalse(utl._is_blank('  \t \n    * '))
-        self.assertFalse(utl._is_blank('  \t \n    § '))
+        self.assertTrue(utl._isblank('    '))
+        self.assertTrue(utl._isblank('  \t  '))
+        self.assertTrue(utl._isblank('  \t \n'))
+        self.assertTrue(utl._isblank('  \t \n    \t   '))
+        self.assertFalse(utl._isblank('  9    '))
+        self.assertFalse(utl._isblank('  asdfasf    '))
+        self.assertFalse(utl._isblank('  \t \n    .'))
+        self.assertFalse(utl._isblank('  \t \n    * '))
+        self.assertFalse(utl._isblank('  \t \n    § '))
 
     def test_utils_readlines_(self):
         lines_all_true = [
@@ -218,7 +218,7 @@ class TestUtils(unittest.TestCase):
         self.assertTrue(utl.isincreasing([1, 2, 3, 4, 5]))
         self.assertTrue(utl.isincreasing([-0.110001, -0.11000001, -0.11]))
         self.assertTrue(utl.isincreasing([[1, 3], [2, 4]]))
-        self.assertTrue(utl.isincreasing([1, 2, 3, 4, 4], strictly=False))
+        self.assertTrue(utl.isincreasing([1, 2, 3, 4, 4], strict=False))
 
         self.assertFalse(utl.isincreasing([-0.11, -0.1100001, -0.110001]))
         self.assertFalse(utl.isincreasing([1, 2, 3, 4, 4]))

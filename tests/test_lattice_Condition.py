@@ -84,7 +84,7 @@ class TestCondition(unittest.TestCase):
         self.assertEqual(latticemap2D_true, perm_map)
         self.assertTrue(latticemap2D_true == perm_map)
 
-    def test_ConditionFile_latticemap3D_object(self):
+    def test_ConditionFile_condmap3D_simple(self):
         nodes3D = [[1, 2, 3], [4, 5, 6, 7, 8, 9, 10], [11]]
         lattice3D = Lattice(nodes3D)
         map_vals3D = [

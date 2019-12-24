@@ -9,8 +9,15 @@
 # Errors
 def err0000(ndim, type_):
     return f"ERR0000 " \
-           f"No :class:`TrajectoryPermission` implementation for " \
+           f"No :class:`_TrajectoryPermission` implementation for " \
            f"dim={ndim} and type='{type_}'"
+
+
+def err0001(vals):
+    return f"ERR0001 " \
+           f"Values {vals} are not uniquely identified to be either `True` " \
+           f"or `False`"
+
 
 # ------------------------------ 1XXX lattice.py ------------------------------
 # Warnings
