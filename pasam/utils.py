@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-"""Definitions of useful tools.
+"""Definitions of some package tools.
 
 Generic methods
 ---------------
     - :func:`findall_num_in_str`: Extracts all numbers from a string.
-    - :func:`permission_map_from_file`: Permission map from txt file.
-    - :func:`permission_map_from_point`: Permission map from conditioning point.
+    - :func:`isincreasing`: Checks if a sequence of values increases.
+    - :func:`permission_map_from_condition_file`: Permission map from file.
+    - :func:`permission_map_from_condition_point`: Permission map from point.
     - :func:`readfile_latticemap`: Reads a latticemap file.
     - :func:`readlines_`: Reads txt file (possibility to remove empty lines).
 """
@@ -27,6 +28,7 @@ from pathlib import Path
 # Third party requirements
 import numpy as np
 # Local imports
+import pasam._messages as msg
 import pasam._settings as settings
 
 # Constants
@@ -34,6 +36,38 @@ _NP_ORDER = 'F'
 
 
 # `Public` methods
+def findall_num_in_str(s):
+    """Extracts all numbers in a string.
+
+    Args:
+        s (str): Input string containing numbers
+
+    Returns:
+        list: List of numbers (`float` or `int`)
+    """
+    re_num = r'-?[0-9]+\.?[0-9]*'
+    nums = re.findall(re_num, s)
+    return [_str2num(n) for n in nums]
+
+
+def isincreasing(vals, strict=True):
+    """Checks if a set of values is increasing.
+
+    Args:
+        vals (array_like, shape=(n,)): Set of values
+        strict (bool, optional): Strictly (`strict=True`) or simply
+            (`strict=False`) increasing.
+
+    Returns:
+        bool
+    """
+    vals = np.asarray(vals).ravel(order=_NP_ORDER)
+    if strict:
+        return np.all(vals[:-1] < vals[1:])
+    else:
+        return np.all(vals[:-1] <= vals[1:])
+
+
 def permission_map_from_condition_file(file):
     """Reads a permission map from a given .txt file.
 
@@ -47,6 +81,7 @@ def permission_map_from_condition_file(file):
     _, _, vals = readfile_latticemap(file)
 
     # !!! Values are inverted in the ams map !!!
+    # There, `0` means permitted and `1` blocked
     map_vals = _ams_val_map_to_bool_map(vals)
 
     return map_vals
@@ -60,27 +95,13 @@ def permission_map_from_condition_point(point, nodes):
         nodes (list): Tensor product nodes.
 
     Returns:
-        ndarray: Boolean array for permitted (True) and blocked (False) nodes.
+        ndarray: Boolean array for permitted (``True``) and blocked (``False``)
+            nodes.
     """
-    map_vals = _ams_condition_point_to_bool_map(point, nodes)
-    return map_vals
+    return _ams_condition_point_to_bool_map(point, nodes)
 
 
-def findall_num_in_str(s):
-    """Extracts all numbers in a string.
-
-    Args:
-        s (str): Input string containing numbers
-
-    Returns:
-        list: List of numbers (`float` or `int`)
-    """
-    pat = r'-?[0-9]+\.?[0-9]*'
-    nums = re.findall(pat, s)
-    return [_str2num(n) for n in nums]
-
-
-def readlines_(file, remove_blank_lines=False, hint=-1):
+def readlines_(file, remove_blank_lines=False):
     """Reading txt file (similar to builtin ``readlines``).
 
     In addition to the standard implementation of ``readlines`` for
@@ -90,8 +111,6 @@ def readlines_(file, remove_blank_lines=False, hint=-1):
     Args:
         file (str or pathlib.Path): File or filename.
         remove_blank_lines (bool, optional): Remove blank lines.
-        hint (int, optional): Limit of the cumulative size (in bytes/
-            characters) of all lines to be read.
 
     Returns:
         list(str): All non empty lines of text file
@@ -103,14 +122,14 @@ def readlines_(file, remove_blank_lines=False, hint=-1):
         lines = txtfile.readlines()
 
     if remove_blank_lines:
-        lines = [line for line in lines if not _is_blank(line)]
+        lines = [line for line in lines if not _isblank(line)]
     return lines
 
 
 def readfile_latticemap(file):
     """Reads a latticemap file.
 
-    The structure of the txt file is as follows::
+    The structure of the latticemap file is as follows::
 
             ----------------------------------------
             | <nnode_dim>                          |
@@ -137,10 +156,9 @@ def readfile_latticemap(file):
         nodes (list): The nodes given in the file.
         map_vals (ndarray, shape=(n,)): Map values given in the file.
     """
-    _REM_BLANK = True
-    lines = readlines_(file, remove_blank_lines=_REM_BLANK)
+    lines = readlines_(file, remove_blank_lines=True)
 
-    # Number of nodes per dimenstion (defined in lines[0])
+    # Number of nodes per dimension (defined in lines[0])
     nnodes_dim = findall_num_in_str(lines[0])
     ndim = len(nnodes_dim)
 
@@ -152,7 +170,7 @@ def readfile_latticemap(file):
     map_vals = [findall_num_in_str(line) for line in lines_map_vals]
 
     # Flatten the list of values
-    map_vals = [val for vals in map_vals for val in vals]
+    map_vals = np.asarray([val for vals in map_vals for val in vals])
 
     return nnodes_dim, nodes, map_vals
 
@@ -172,8 +190,8 @@ def _ams_condition_point_to_bool_map(point, nodes, specs=None):
             - ... (type related specifications)
 
     Returns:
-        ndarray, shape=(n,): Boolean array for permitted (True) and blocked
-            (False) nodes.
+        ndarray, shape=(n,): Boolean array for permitted (``True``) and blocked
+            (``False``) nodes.
     """
     if not specs:
         specs = settings.AMS_TRAJ_PERM_SPECS
@@ -189,7 +207,7 @@ def _ams_condition_point_to_bool_map(point, nodes, specs=None):
 
 
 def _ams_val_map_to_bool_map(vals):
-    """Inverts `0` to `True` and `1` to `False`.
+    """Assigns `0` to ``True`` and `1` to ``False``.
 
     By default, the AMS generates files where the permitted nodes have
     values `0` and the blocked nodes have value `1`.
@@ -208,7 +226,7 @@ def _ams_val_map_to_bool_map(vals):
     if np.sum(np.logical_xor(ind_true, ind_false)) != len(map_vals):
         ind_not_unique = np.logical_not( np.logical_xor(ind_true, ind_false) )
         ind = np.where(ind_not_unique)[0]
-        raise ValueError(f'Values(s) {vals[ind]} are not uniquely identified')
+        raise ValueError(msg.err0001(vals[ind]))
 
     # Tag nodes according to the permission
     map_vals[ind_true] = True
@@ -217,10 +235,11 @@ def _ams_val_map_to_bool_map(vals):
     return map_vals
 
 
-def _is_blank(s):
+def _isblank(s):
     """Check whether a string only contains whitespace characters.
     """
-    return bool(re.match(r'^\s+$', s))
+    re_blank = r'^\s+$'
+    return bool(re.match(re_blank, s))
 
 
 def _str2num(s):
@@ -235,7 +254,7 @@ def _str2num(s):
 # `Private` Classes
 class _TrajectoryPermission(abc.ABC):
     """`_TrajectoryPermission` defines an abstract parent class for the machine
-    movement restrictions by a point in the space.
+    movement permissions.
 
     Notes:
         Any sub-class of `_PointTrajectory` must provide an implementation of
@@ -245,7 +264,7 @@ class _TrajectoryPermission(abc.ABC):
     
     @abc.abstractmethod
     def permission_map(self):
-        """Generates a condition map from a conditioning point.
+        """Generates a permission map.
 
         Returns:
             ndarray: Boolean array for permitted (True) and blocked (False)
@@ -255,7 +274,7 @@ class _TrajectoryPermission(abc.ABC):
 
 class _TrajectoryPermissionFactory:
     """`_TrajectoryPermissionFactory` produces instances of
-    :class:`_PointTrajectory` according to the specifications.
+    :class:`_PointTrajectory`.
     """
 
     @staticmethod
@@ -263,8 +282,8 @@ class _TrajectoryPermissionFactory:
         """Creates `_TrajectoryPermission` objects.
 
         Args:
-            specs (dict): Specifications for the trajectory permission. Fields
-                are:
+            specs (dict): Specifications for the trajectory permission object.
+                Fields are:
 
                 - 'type': Type of trajectory permission (`str`).
                 - 'ndim': Number of dimensions (`int`).
@@ -273,14 +292,12 @@ class _TrajectoryPermissionFactory:
         Returns:
             _TrajectoryPermission: Trajectory permission object.
         """
-        type = specs['type']
+        type_ = specs['type']
         ndim = specs['ndim']
-        if ndim == 2 and type == 'GantryDominant':
+        if ndim == 2 and type_ == 'GantryDominant':
             return _TrajectoryPermissionGantryDominant2D(specs)
         else:
-            msg = f'No implemented trajectory permission for ' \
-                  f'dim={ndim} and type="{type}"'
-            raise ValueError(msg)
+            raise ValueError(msg.err0000(ndim, type_))
 
 
 class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
@@ -295,11 +312,14 @@ class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
         - 'ratio_table_gantry_rotation': Maximum allowed ratio between table
             and gantry angle rotation.
     """
+    _NODES_KEY            = 'nodes'
+    _CONDITION_POINT_KEY  = 'condition_point'
+    _RATIO_KEY            = 'ratio_table_gantry_rotation'
 
     def __init__(self, specs):
-        self._nodes = specs['nodes']
-        self._condition_point = specs['condition_point']
-        self._ratio = specs['ratio_table_gantry_rotation']
+        self._nodes = specs[self._NODES_KEY]
+        self._condition_point = specs[self._CONDITION_POINT_KEY]
+        self._ratio = specs[self._RATIO_KEY]
 
     def permission_map(self):
         nnodes_dim = tuple(len(n) for n in self._nodes)
@@ -339,4 +359,3 @@ class _TrajectoryPermissionGantryDominant3D(_TrajectoryPermission):
     # TODO: Define _TrajectoryPermissionGantryDominant3D
     # TODO: Add tests for _TrajectoryPermissionGantryDominant3D
     pass
-

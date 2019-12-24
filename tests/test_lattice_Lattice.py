@@ -39,9 +39,15 @@ class TestLattice(unittest.TestCase):
         self.nodes3D = [self.x, self.y, self.z]
 
         self.x_short = [1, 2, 3, 4.5, 5]
-        self.x_non_eq = [5, 5, 5, 5, 5, 5]
+        self.x_non_eq = [5, 6, 7, 8, 9, 10]
 
     # Tests associated to Lattice2D
+    def test_Lattice2D_gen(self):
+        lattice = Lattice(self.nodes2D)
+        self.assertTrue(isinstance(lattice, Lattice))
+        with self.assertRaises(ValueError):
+            Lattice([[1, 2, 3], [1, -1, 2]])
+
     def test_Lattice2D__eq__(self):
         lattice = Lattice(self.nodes2D)
         lattice_is = lattice
@@ -72,10 +78,6 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(hasattr(lattice, '__str__'))
         self.assertTrue(lattice.__str__())
 
-    def test_Lattice2D_type(self):
-        lattice = Lattice(self.nodes2D)
-        self.assertTrue(isinstance(lattice, Lattice))
-
     def test_Lattice2D_nnodes(self):
         ndim = 2
         nnodes_dim = (6, 4)
@@ -89,6 +91,12 @@ class TestLattice(unittest.TestCase):
         self.assertEqual(lattice.nnodes, nnodes)
 
     # Tests associated to Lattice3D
+    def test_Lattice3D_gen(self):
+        lattice = Lattice(self.nodes3D)
+        self.assertTrue(isinstance(lattice, Lattice))
+        with self.assertRaises(ValueError):
+            Lattice([[1, 2, 3], [-1, 2], [1, -1, 2]])
+
     def test_Lattice3D__eq__(self):
         lattice = Lattice(self.nodes3D)
         lattice_is = lattice
@@ -118,10 +126,6 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(lattice.__repr__())
         self.assertTrue(hasattr(lattice, '__str__'))
         self.assertTrue(lattice.__str__())
-
-    def test_Lattice3D_type(self):
-        lattice = Lattice(self.nodes3D)
-        self.assertTrue(isinstance(lattice, Lattice))
 
     def test_Lattice3D_nnodes(self):
         ndim = 3
