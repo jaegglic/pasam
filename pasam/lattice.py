@@ -18,6 +18,7 @@ Methods
 #   Authors: Stefanie Marti and Christoph Jaeggli
 #   Institute: Insel Data Science Center, Insel Gruppe AG
 #
+#   MIT License
 #   Copyright (c) 2020 Stefanie Marti, Christoph Jaeggli
 #
 #   This program is distributed in the hope that it will be useful, but
