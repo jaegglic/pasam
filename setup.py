@@ -36,8 +36,8 @@ setup(
     python_requires='>=3.6',
     install_requires=[
         f'numpy=={_NUMPY_VERSION}',
-        f'sphinx>={_SPHINX_VERSION_MIN}',
-        f'sphinx_rtd_theme>={_SPHINX_RTD_THEME_VERSION_MIN}',
+        # f'sphinx>={_SPHINX_VERSION_MIN}',
+        # f'sphinx_rtd_theme>={_SPHINX_RTD_THEME_VERSION_MIN}',
     ],
     test_suite='setup.test_suite',
     classifiers=[
