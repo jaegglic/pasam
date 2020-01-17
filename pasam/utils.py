@@ -33,7 +33,7 @@ import pasam._messages as msg
 import pasam._settings as settings
 
 # Constants
-_NP_ORDER = 'F'
+_NP_ORDER = 'F'         # 'F' for 'Fortran' and 'C' for 'C++' reordering style
 
 
 # `Public` methods
@@ -195,7 +195,7 @@ def _ams_condition_point_to_bool_map(point, nodes, specs=None):
             (``False``) nodes.
     """
     if not specs:
-        specs = settings.AMS_TRAJ_PERM_SPECS
+        specs = settings.AMS_TRAJ_SPECS
 
     # Specifications for the trajectory restriction by a point
     specs['condition_point'] = point

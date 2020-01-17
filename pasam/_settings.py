@@ -3,7 +3,7 @@
 """
 
 
-AMS_TRAJ_PERM_SPECS = {
+AMS_TRAJ_SPECS = {
     # Rotation / Permission type
     'type': 'GantryDominant',
 

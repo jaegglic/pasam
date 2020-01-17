@@ -147,6 +147,15 @@ class Lattice:
             return all(nodes_eq)
         return False
 
+    def __getitem__(self, key):
+        if not isinstance(key, tuple) or len(key) != len(self.nodes):
+            raise ValueError(msg.err1004(self, key))
+        nodes = [n[k] for n, k in zip(self.nodes, key)]
+        for inode, node in enumerate(nodes):
+            if isinstance(node, numbers.Number):
+                nodes[inode] = [node]
+        return self.__class__(nodes)
+
     def __init__(self, nodes):
         nodes = list(np.asarray(n) for n in nodes)
         if not all(utl.isincreasing(n, strict=True) for n in nodes):

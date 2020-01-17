@@ -44,6 +44,12 @@ def err1003(nnodes, nval):
            f"map values (nval={nval})"
 
 
+def err1004(obj, key):
+    return f"ERR1004 " \
+           f"Key '{key}' is not an appropriate slicing object " \
+           f"for '{obj}'."
+
+
 if __name__ == '__main__':
     print(err0000(2, 'GantryDominant'))
     print(err1000('foobar.txt'))
