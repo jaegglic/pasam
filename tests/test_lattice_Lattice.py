@@ -21,8 +21,8 @@ import unittest
 # Third party requirements
 import numpy as np
 # Local imports
-from pasam.lattice import Lattice, LatticeMap
 from pasam._paths import PATH_TESTFILES
+from pasam.lattice import Lattice, LatticeMap
 
 # Constants
 _NP_SEED = 458967
@@ -62,6 +62,34 @@ class TestLattice(unittest.TestCase):
         self.assertFalse(lattice is lattice_eq)
         self.assertFalse(lattice == lattice_non_eq)
         self.assertFalse(lattice == lattice_short)
+
+    def test_Lattice2D__getitem__(self):
+        lattice = Lattice(self.nodes2D)
+        nodes = lattice.nodes
+        nnodes_dim = lattice.nnodes_dim
+
+        nx_st, nx_end = 2, 4
+        ny_st, ny_end = 0, 3
+
+        lattice_x = lattice[nx_st, :]
+        lattice_xslice = lattice[nx_st:nx_end, :]
+
+        lattice_y = lattice[:, ny_st]
+        lattice_yslice = lattice[:, ny_st:ny_end]
+
+        lattice_xyslice = lattice[nx_st:nx_end, ny_st:ny_end]
+
+        self.assertTrue(lattice_x.nnodes_dim == (1, nnodes_dim[1]))
+        self.assertTrue(lattice_x == Lattice([[nodes[0][nx_st]], nodes[1]]))
+        self.assertTrue(lattice_xslice.nnodes_dim == (2, nnodes_dim[1]))
+        self.assertTrue(lattice_xslice == Lattice([nodes[0][nx_st:nx_end], nodes[1]]))
+
+        self.assertTrue(lattice_y.nnodes_dim == (nnodes_dim[0], 1))
+        self.assertTrue(lattice_y == Lattice([nodes[0], [nodes[1][ny_st]]]))
+        self.assertTrue(lattice_yslice.nnodes_dim == (nnodes_dim[0], 3))
+        self.assertTrue(lattice_yslice == Lattice([nodes[0], nodes[1][ny_st:ny_end]]))
+
+        self.assertTrue(lattice_xyslice == Lattice([nodes[0][nx_st:nx_end], nodes[1][ny_st:ny_end]]))
 
     def test_Lattice2D_ndim(self):
         ndim = 2
@@ -111,6 +139,27 @@ class TestLattice(unittest.TestCase):
         self.assertFalse(lattice is lattice_eq)
         self.assertFalse(lattice == lattice_non_eq)
         self.assertFalse(lattice == lattice_short)
+
+    def test_Lattice3D__getitem__(self):
+        lattice = Lattice(self.nodes3D)
+        nodes = lattice.nodes
+        nnodes_dim = lattice.nnodes_dim
+
+        nx_st, nx_end = 2, 4
+        ny_st, ny_end = 0, 3
+        nz_st, nz_end = 2, 3
+
+        lattice_z = lattice[:, :, nz_st]
+        lattice_zslice = lattice[:, :, nz_st:nz_end]
+
+        lattice_xyzslice = lattice[nx_st:nx_end, ny_st:ny_end, nz_st:nz_end]
+
+        self.assertTrue(lattice_z.nnodes_dim == (nnodes_dim[0], nnodes_dim[1], 1))
+        self.assertTrue(lattice_z == Lattice([nodes[0], nodes[1], [nodes[2][nz_st]]]))
+        self.assertTrue(lattice_zslice.nnodes_dim == (nnodes_dim[0], nnodes_dim[1], 1))
+        self.assertTrue(lattice_zslice == Lattice([nodes[0], nodes[1], nodes[2][nz_st:nz_end]]))
+
+        self.assertTrue(lattice_xyzslice == Lattice([nodes[0][nx_st:nx_end], nodes[1][ny_st:ny_end], nodes[2][nz_st:nz_end]]))
 
     def test_Lattice3D_ndim(self):
         ndim = 3

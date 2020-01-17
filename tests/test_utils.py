@@ -21,8 +21,8 @@ import unittest
 # Third party requirements
 import numpy as np
 # Local imports
-import pasam.utils as utl
 from pasam._paths import PATH_TESTFILES
+import pasam.utils as utl
 
 
 class TestUtils(unittest.TestCase):
@@ -224,9 +224,8 @@ class TestUtils(unittest.TestCase):
         self.assertFalse(utl.isincreasing([-0.11, -0.1100001, -0.110001]))
         self.assertFalse(utl.isincreasing([1, 2, 3, 4, 4]))
 
-
     # # Test plot
-    # def test_plot_utils__ams_condition_point_to_bool_map_(self):
+    # def test_plot_utils__ams_condition_point_to_bool_map(self):
     #     import matplotlib.pyplot as plt
     #     specs = {
     #         'type': 'GantryDominant',
@@ -239,6 +238,26 @@ class TestUtils(unittest.TestCase):
     #     plt.imshow(map_vals.reshape((180, 90), order='F').transpose()*1,
     #                origin='lower')
     #     plt.show()
+
+    def test_plot_utils__ams_condition_point_mult(self):
+        import matplotlib.pyplot as plt
+        specs = {
+            'type': 'GantryDominant',
+            'ndim': 2,
+            'ratio_table_gantry_rotation': 1,
+        }
+        nodes = [np.arange(-179, 181, 2), np.arange(-89, 91, 2)]
+
+        point_a = (-81, -21)
+        map_vals_a = utl._ams_condition_point_to_bool_map(point_a, nodes, specs)
+
+        point_b = (-39, 21)
+        map_vals_b = utl._ams_condition_point_to_bool_map(point_b, nodes, specs)
+
+        map_vals = map_vals_a * map_vals_b
+        plt.imshow(map_vals.reshape((180, 90), order='F').transpose()*1,
+                   origin='lower')
+        plt.show()
 
 
 if __name__ == '__main__':

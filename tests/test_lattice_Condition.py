@@ -21,9 +21,9 @@ import unittest
 # Third party requirements
 import numpy as np
 # Local imports
+from pasam._paths import PATH_TESTFILES
 from pasam.lattice import (Lattice, LatticeMap,
                            Condition, ConditionFile, ConditionPoint)
-from pasam._paths import PATH_TESTFILES
 
 
 class TestCondition(unittest.TestCase):
