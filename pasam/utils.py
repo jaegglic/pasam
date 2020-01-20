@@ -176,6 +176,21 @@ def readfile_latticemap(file):
     return nnodes_dim, nodes, map_vals
 
 
+def write_trajectory_to_txt(fname, points):
+    """Writes the trajectory to a text file.
+
+    Args:
+        fname (file, str, or pathlib.Path): File, filename, or generator to
+            write.
+        points (list): Sequence of trajectory points.
+
+    Returns:
+        None
+    """
+    _ams_write_trajectory_to_txt(fname, points)
+
+
+# -----------------------------------------------------------------------------
 # `Private` Methods
 def _ams_condition_point_to_bool_map(point, nodes, specs=None):
     """Generates a permission map from a conditioning point.
@@ -234,6 +249,15 @@ def _ams_val_map_to_bool_map(vals):
     map_vals[ind_false] = False
 
     return map_vals
+
+
+def _ams_write_trajectory_to_txt(fname, points):
+    """Write a trajectory to a txt file according to the AMS guidelines.
+    """
+    with open(fname, 'w+') as tfile:
+        tfile.write(f'{len(points)}\n')
+        for pt in points:
+            tfile.write('\t'.join([f'{p}' for p in pt]) + '\n')
 
 
 def _isblank(s):

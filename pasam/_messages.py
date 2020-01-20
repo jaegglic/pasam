@@ -52,4 +52,4 @@ def err1004(obj, key):
 
 if __name__ == '__main__':
     print(err0000(2, 'GantryDominant'))
-    print(err1000('foobar.txt'))
+    print(err1001([1, 2, 4, 3]))

@@ -2,8 +2,13 @@
 """Problem specific settings file.
 """
 
-NP_ORDER = 'F'         # 'F' for 'Fortran' and 'C' for 'C++' reordering style
+# __repr__ handling of long arrays
+RLIB_MAXLIST = 3
 
+# 'Fortran' reordering style (DON'T CHANGE IT --> Unit-Tests will fail)
+NP_ORDER = 'F'
+
+# Dynamic Trajectory specifications
 AMS_TRAJ_SPECS = {
     # Rotation / Permission type
     'type': 'GantryDominant',

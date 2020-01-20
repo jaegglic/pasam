@@ -40,9 +40,8 @@ import pasam.utils as utl
 
 # Constants and Variables
 _NP_ORDER = settings.NP_ORDER
-_RLIB_MAXLIST = 3
 _rlib = reprlib.Repr()
-_rlib.maxlist = _RLIB_MAXLIST
+_rlib.maxlist = settings.RLIB_MAXLIST
 
 
 # Condition Objects
