@@ -21,10 +21,12 @@ import unittest
 # Third party requirements
 import numpy as np
 # Local imports
+import pasam._settings as settings
 from pasam._paths import PATH_TESTFILES
 from pasam.lattice import Lattice, LatticeMap
 
 # Constants
+_NP_ORDER = settings.NP_ORDER
 _NP_SEED = 458967
 np.random.seed(_NP_SEED)
 
@@ -218,6 +220,54 @@ class TestLattice(unittest.TestCase):
         self.assertFalse(latticemap is latticemap_eq)
         self.assertFalse(latticemap == latticemap_non_eq)
 
+    def test_LatticeMap2D__getitem__(self):
+        lattice = Lattice(self.nodes2D)
+        nodes = lattice.nodes
+        nnodes_dim = lattice.nnodes_dim
+
+        map_vals = np.random.randn(lattice.nnodes)
+        latticemap = LatticeMap(lattice, map_vals)
+
+        nx_st, nx_end = 2, 4
+        ny_st, ny_end = 0, 3
+        ind_x = np.arange(nx_st, nx_end)
+        ind_y = np.arange(ny_st, ny_end)
+
+        latticemap_x = latticemap[nx_st, :]
+        lin_ind_x = np.array([nx_st + iy*nnodes_dim[0]
+                              for iy in range(nnodes_dim[1])])
+
+        latticemap_xslice = latticemap[nx_st:nx_end, :]
+        lin_ind_xslice = np.array([ix + iy*nnodes_dim[0]
+                                   for iy in range(nnodes_dim[1])
+                                   for ix in ind_x])
+
+        latticemap_y = latticemap[:, ny_st]
+        lin_ind_y = np.array([ix + ny_st*nnodes_dim[0]
+                              for ix in range(nnodes_dim[0])])
+
+
+        latticemap_yslice = latticemap[:, ny_st:ny_end]
+        lin_ind_yslice = np.array([ix + iy*nnodes_dim[0]
+                                   for iy in ind_y
+                                   for ix in range(nnodes_dim[0])])
+
+        latticemap_xyslice = latticemap[nx_st:nx_end, ny_st:ny_end]
+        lin_ind_xyslice = np.array([ix + iy*nnodes_dim[0]
+                                    for iy in ind_y
+                                    for ix in ind_x])
+
+        self.assertTrue(latticemap_x == LatticeMap(lattice=lattice[nx_st, :],
+                                                   map_vals=map_vals[lin_ind_x]))
+        self.assertTrue(latticemap_xslice == LatticeMap(lattice=lattice[nx_st:nx_end, :],
+                                                        map_vals=map_vals[lin_ind_xslice]))
+        self.assertTrue(latticemap_y == LatticeMap(lattice=lattice[:, ny_st],
+                                                   map_vals=map_vals[lin_ind_y]))
+        self.assertTrue(latticemap_yslice == LatticeMap(lattice=lattice[:, ny_st:ny_end],
+                                                        map_vals=map_vals[lin_ind_yslice]))
+        self.assertTrue(latticemap_xyslice == LatticeMap(lattice=lattice[nx_st:nx_end, ny_st:ny_end],
+                                                         map_vals=map_vals[lin_ind_xyslice]))
+
     def test_LatticeMap2D__add__(self):
         lattice = Lattice(self.nodes2D)
         nodes_short = [self.x_short, self.y]
@@ -326,6 +376,44 @@ class TestLattice(unittest.TestCase):
         self.assertEqual(latticemap, latticemap_eq)
         self.assertFalse(latticemap is latticemap_eq)
         self.assertFalse(latticemap == latticemap_non_eq)
+
+    def test_LatticeMap3D__getitem__(self):
+        lattice = Lattice(self.nodes3D)
+        nodes = lattice.nodes
+        nnodes_dim = lattice.nnodes_dim
+
+        map_vals = np.random.randn(lattice.nnodes)
+        latticemap = LatticeMap(lattice, map_vals)
+
+        nx_st, nx_end = 2, 4
+        ny_st, ny_end = 0, 3
+        nz_st, nz_end = 2, 3
+        ind_x = np.arange(nx_st, nx_end)
+        ind_y = np.arange(ny_st, ny_end)
+        ind_z = np.arange(nz_st, nz_end)
+
+        latticemap_z = latticemap[:, :, nz_st]
+        lin_ind_z = np.array([ix + iy*nnodes_dim[0] + nz_st*nnodes_dim[0]*nnodes_dim[1]
+                              for iy in range(nnodes_dim[1])
+                              for ix in range(nnodes_dim[0])])
+
+        latticemap_zslice = latticemap[:, :, nz_st:nz_end]
+        lin_ind_zslice = np.array([ix + iy*nnodes_dim[0] + iz*nnodes_dim[0]*nnodes_dim[1]
+                                   for iz in ind_z
+                                   for iy in range(nnodes_dim[1])
+                                   for ix in range(nnodes_dim[0])])
+
+        latticemap_xyzslice = latticemap[nx_st:nx_end, ny_st:ny_end, nz_st:nz_end]
+        lin_ind_xyzslice = np.array([ix + iy*nnodes_dim[0] + iz*nnodes_dim[0]*nnodes_dim[1]
+                                     for iz in ind_z
+                                     for iy in ind_y
+                                     for ix in ind_x])
+        self.assertTrue(latticemap_z == LatticeMap(lattice=lattice[:, :, nz_st],
+                                                   map_vals=map_vals[lin_ind_z]))
+        self.assertTrue(latticemap_zslice == LatticeMap(lattice=lattice[:, :, nz_st:nz_end],
+                                                        map_vals=map_vals[lin_ind_zslice]))
+        self.assertTrue(latticemap_xyzslice == LatticeMap(lattice=lattice[nx_st:nx_end, ny_st:ny_end, nz_st:nz_end],
+                                                          map_vals=map_vals[lin_ind_xyzslice]))
 
     def test_LatticeMap3D__add__(self):
         lattice = Lattice(self.nodes3D)

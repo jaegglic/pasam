@@ -239,25 +239,25 @@ class TestUtils(unittest.TestCase):
     #                origin='lower')
     #     plt.show()
 
-    def test_plot_utils__ams_condition_point_mult(self):
-        import matplotlib.pyplot as plt
-        specs = {
-            'type': 'GantryDominant',
-            'ndim': 2,
-            'ratio_table_gantry_rotation': 1,
-        }
-        nodes = [np.arange(-179, 181, 2), np.arange(-89, 91, 2)]
-
-        point_a = (-81, -21)
-        map_vals_a = utl._ams_condition_point_to_bool_map(point_a, nodes, specs)
-
-        point_b = (-39, 21)
-        map_vals_b = utl._ams_condition_point_to_bool_map(point_b, nodes, specs)
-
-        map_vals = map_vals_a * map_vals_b
-        plt.imshow(map_vals.reshape((180, 90), order='F').transpose()*1,
-                   origin='lower')
-        plt.show()
+    # def test_plot_utils__ams_condition_point_mult(self):
+    #     import matplotlib.pyplot as plt
+    #     specs = {
+    #         'type': 'GantryDominant',
+    #         'ndim': 2,
+    #         'ratio_table_gantry_rotation': 2,
+    #     }
+    #     nodes = [np.arange(-179, 181, 2), np.arange(-89, 91, 2)]
+    #
+    #     point_a = (-81, -21)
+    #     map_vals_a = utl._ams_condition_point_to_bool_map(point_a, nodes, specs)
+    #
+    #     point_b = (-39, 21)
+    #     map_vals_b = utl._ams_condition_point_to_bool_map(point_b, nodes, specs)
+    #
+    #     map_vals = map_vals_a * map_vals_b
+    #     plt.imshow(map_vals.reshape((180, 90), order='F').transpose()*1,
+    #                origin='lower')
+    #     plt.show()
 
 
 if __name__ == '__main__':
