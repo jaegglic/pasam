@@ -5,7 +5,7 @@
 # __repr__ handling of long arrays
 RLIB_MAXLIST = 3
 
-# 'Fortran' reordering style (DON'T CHANGE IT --> Unit-Tests will fail)
+# 'Fortran' reordering style (if changed, unit-tests will fail)
 NP_ORDER = 'F'
 
 # Dynamic Trajectory specifications
