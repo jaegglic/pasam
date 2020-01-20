@@ -33,7 +33,7 @@ import pasam._messages as msg
 import pasam._settings as settings
 
 # Constants
-_NP_ORDER = 'F'         # 'F' for 'Fortran' and 'C' for 'C++' reordering style
+_NP_ORDER = settings.NP_ORDER
 
 
 # `Public` methods

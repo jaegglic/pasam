@@ -33,13 +33,16 @@ import numbers
 import numpy as np
 # Local imports
 import pasam._messages as msg
+import pasam._settings as settings
 import pasam.utils as utl
 
+# Constants
+
 # Constants and Variables
+_NP_ORDER = settings.NP_ORDER
 _RLIB_MAXLIST = 3
 _rlib = reprlib.Repr()
 _rlib.maxlist = _RLIB_MAXLIST
-_NP_ORDER = 'F'
 
 
 # Condition Objects
@@ -234,6 +237,13 @@ class LatticeMap:
         if isinstance(other, LatticeMap) and self.lattice == other.lattice:
             return np.all(self.map_vals == other.map_vals)
         return False
+
+    def __getitem__(self, key):
+        """Uses the slicing of numpy (with according reshapes)"""
+        lattice = self.lattice[key]
+        map_vals = self.map_vals.reshape(self.lattice.nnodes_dim, order=_NP_ORDER)
+        map_vals = map_vals[key].ravel(order=_NP_ORDER)
+        return self.__class__(lattice=lattice, map_vals=map_vals)
 
     def __init__(self, lattice, map_vals, dtype=None):
         map_vals = np.asarray(map_vals, dtype=dtype).ravel(order=_NP_ORDER)

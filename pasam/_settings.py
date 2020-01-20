@@ -2,6 +2,7 @@
 """Problem specific settings file.
 """
 
+NP_ORDER = 'F'         # 'F' for 'Fortran' and 'C' for 'C++' reordering style
 
 AMS_TRAJ_SPECS = {
     # Rotation / Permission type
