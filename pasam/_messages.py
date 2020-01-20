@@ -50,6 +50,24 @@ def err1004(obj, key):
            f"for '{obj}'."
 
 
+# ------------------------------ 2XXX pathgen.py ------------------------------
+# Warnings
+
+
+# Errors
+
+
+# ----------------------------- 3XXX sampling.py ------------------------------
+# Warnings
+
+
+# Errors
+def err3000(ndim, type_):
+    return f"ERR3000 " \
+           f"No :class:`Sampler` implementation for " \
+           f"dim={ndim} and type='{type_}'"
+
+
 if __name__ == '__main__':
     print(err0000(2, 'GantryDominant'))
     print(err1001([1, 2, 4, 3]))
