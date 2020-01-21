@@ -88,18 +88,26 @@ def permission_map_from_condition_file(file):
     return map_vals
 
 
-def permission_map_from_condition_point(point, nodes):
+def permission_map_from_condition_point(nodes, cond_point=None):
     """Generates a permission map from a conditioning point.
 
     Args:
-        point (array_like, shape=(n,)): Coordinates of the condition point.
         nodes (list): Tensor product nodes.
+        cond_point (tuple, optional): Condition point components.
 
     Returns:
         ndarray: Boolean array for permitted (``True``) and blocked (``False``)
             nodes.
     """
-    return _ams_condition_point_to_bool_map(point, nodes)
+    type_ = settings.AMS_TRAJ_SPECS['type']
+    kwargs = {
+        'nodes':        nodes,
+        'ratio':        settings.AMS_TRAJ_SPECS['ratio_table_gantry_rotation'],
+        'cond_point':   cond_point
+    }
+
+    traj_perm = _TrajectoryPermissionFactory.make(type_, **kwargs)
+    return traj_perm.permission_map()
 
 
 def readlines_(file, remove_blank_lines=False):
@@ -192,36 +200,6 @@ def write_trajectory_to_txt(fname, points):
 
 # -----------------------------------------------------------------------------
 # `Private` Methods
-def _ams_condition_point_to_bool_map(point, nodes, specs=None):
-    """Generates a permission map from a conditioning point.
-
-    Args:
-        point (array_like, shape=(n,)): Coordinates of the condition point.
-        nodes (list): Tensor product nodes.
-        specs (dict, optional): Specifications for the trajectory permission.
-            Fields are:
-
-            - 'type': Type of trajectory permission (`str`).
-            - 'ndim': Number of dimensions (`int`).
-            - ... (type related specifications)
-
-    Returns:
-        ndarray, shape=(n,): Boolean array for permitted (``True``) and blocked
-            (``False``) nodes.
-    """
-    if not specs:
-        specs = settings.AMS_TRAJ_SPECS
-
-    # Specifications for the trajectory restriction by a point
-    specs['condition_point'] = point
-    specs['nodes'] = nodes
-
-    factory = _TrajectoryPermissionFactory
-    traj_perm = factory.make(specs)
-
-    return traj_perm.permission_map()
-
-
 def _ams_val_map_to_bool_map(vals):
     """Assigns `0` to ``True`` and `1` to ``False``.
 
@@ -303,26 +281,21 @@ class _TrajectoryPermissionFactory:
     """
 
     @staticmethod
-    def make(specs):
+    def make(type_, **kwargs):
         """Creates `_TrajectoryPermission` objects.
 
         Args:
-            specs (dict): Specifications for the trajectory permission object.
-                Fields are:
-
-                - 'type': Type of trajectory permission (`str`).
-                - 'ndim': Number of dimensions (`int`).
-                - ... (type related specifications)
+            type_ (str): Trajectory permission type.
+            kwargs (dict): Type specific arguments.
 
         Returns:
             _TrajectoryPermission: Trajectory permission object.
         """
-        type_ = specs['type']
-        ndim = specs['ndim']
-        if ndim == 2 and type_ == 'GantryDominant':
-            return _TrajectoryPermissionGantryDominant2D(specs)
+
+        if type_ == 'GantryDominant2D':
+            return _TrajectoryPermissionGantryDominant2D(**kwargs)
         else:
-            raise ValueError(msg.err0000(ndim, type_))
+            raise ValueError(msg.err0000(type_))
 
 
 class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
@@ -330,25 +303,20 @@ class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
     movement restriction class.
 
     Args:
-        specs (dict): Specifications for the trajectory permission. Fields are:
-
-        - 'nodes': Tensor product nodes (`list`).
-        - 'condition_point': Condition point (`tuple` or `None`)
-        - 'ratio_table_gantry_rotation': Maximum allowed ratio between table
-            and gantry angle rotation.
+        nodes (list): Tensor product nodes.
+        ratio (float): Maximum allowed ratio between table and gantry angle
+            rotation.
+        cond_point (tuple, optional): Condition point components.
     """
-    _NODES_KEY            = 'nodes'
-    _CONDITION_POINT_KEY  = 'condition_point'
-    _RATIO_KEY            = 'ratio_table_gantry_rotation'
 
-    def __init__(self, specs):
-        self._nodes = specs[self._NODES_KEY]
-        self._condition_point = specs[self._CONDITION_POINT_KEY]
-        self._ratio = specs[self._RATIO_KEY]
+    def __init__(self, nodes, ratio, cond_point=None):
+        self._nodes = nodes
+        self._ratio = ratio
+        self._cond_point = cond_point
 
     def permission_map(self):
         nnodes_dim = tuple(len(n) for n in self._nodes)
-        if self._condition_point is None:
+        if self._cond_point is None:
             return np.ones(nnodes_dim, dtype=bool)
 
         return self._permission_map_from_condition_point()
@@ -363,16 +331,16 @@ class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
 
         # Initialization
         nodes = [np.asarray(n) for n in self._nodes]
-        condition_point = self._condition_point
+        cond_point = self._cond_point
         ratio = self._ratio
 
         # Loop in gantry direction through the lattice
         nnodes_dim = tuple(len(n) for n in self._nodes)
         map_vals = np.zeros(nnodes_dim, dtype=bool)
         for inode, node in enumerate(nodes[IND_GANTRY]):
-            v_range = abs(node - condition_point[IND_GANTRY]) * ratio
-            v_min = condition_point[IND_TABLE] - v_range
-            v_max = condition_point[IND_TABLE] + v_range
+            v_range = abs(node - cond_point[IND_GANTRY]) * ratio
+            v_min = cond_point[IND_TABLE] - v_range
+            v_max = cond_point[IND_TABLE] + v_range
 
             ind_true = np.logical_and(nodes[IND_TABLE] >= v_min,
                                       nodes[IND_TABLE] <= v_max)

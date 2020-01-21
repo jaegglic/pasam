@@ -7,10 +7,9 @@
 
 
 # Errors
-def err0000(ndim, type_):
+def err0000(type_):
     return f"ERR0000 " \
-           f"No :class:`_TrajectoryPermission` implementation for " \
-           f"dim={ndim} and type='{type_}'"
+           f"No :class:`_TrajectoryPermission` implementation for type='{type_}'"
 
 
 def err0001(vals):
@@ -62,12 +61,11 @@ def err1004(obj, key):
 
 
 # Errors
-def err3000(ndim, type_):
+def err3000(type_):
     return f"ERR3000 " \
-           f"No :class:`Sampler` implementation for " \
-           f"dim={ndim} and type='{type_}'"
+           f"No :class:`Sampler` implementation for type='{type_}'"
 
 
 if __name__ == '__main__':
-    print(err0000(2, 'GantryDominant'))
+    print(err0000('GantryDominant'))
     print(err1001([1, 2, 4, 3]))

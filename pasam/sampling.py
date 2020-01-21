@@ -74,26 +74,21 @@ class SamplerFactory:
     """
 
     @staticmethod
-    def make(specs):
+    def make(type_, **kwargs):
         """Creates :class:`Sampler` objects.
 
         Args:
-            specs (dict): Specifications for the sampler object.
-                Fields are:
-
-                - 'type': Type of trajectory permission (`str`).
-                - 'ndim': Number of dimensions (`int`).
-                - ... (type related specifications)
+            type_ (str): Trajectory sampler type.
+            kwargs (dict): Type specific arguments.
 
         Returns:
             Sampler: Sampling algorithm object.
         """
-        type_ = specs['type']
-        ndim = specs['ndim']
-        if ndim == 2 and type_ == 'GantryDominant':
-            return SamplerGantryDominant2D(specs)
+
+        if type_ == 'GantryDominant2D':
+            return SamplerGantryDominant2D(**kwargs)
         else:
-            raise ValueError(msg.err3000(ndim, type_))
+            raise ValueError(msg.err3000(type_))
 
 
 class SamplerGantryDominant2D(Sampler):

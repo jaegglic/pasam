@@ -137,51 +137,54 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(nodes_true, nodes_test)
         self.assertTrue(np.all(map_vals_true == map_vals_test))
 
-    def test_utils__ams_condition_point_to_bool_map(self):
-        nodes = [[-2, -1, 0, 1, 2], [-2, 0, 2]]
+    def test_utils_TrajectoryPermissionGantryDominant2D(self):
+        type_ = 'GantryDominant2D'
 
-        specs = {
-            'type': 'GantryDominant',
-            'ndim': 2,
-            'ratio_table_gantry_rotation': 1.0,
+        kwargs = {
+            'nodes': [[-2, -1, 0, 1, 2], [-2, 0, 2]],
+            'ratio': 1.0,
+            'cond_point': (0, 0)
         }
-        point = (0, 0)
         map_vals_true = np.array([
             1, 0, 0, 0, 1,
             1, 1, 1, 1, 1,
             1, 0, 0, 0, 1,
         ], dtype=bool)
-        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
+        traj_perm = utl._TrajectoryPermissionFactory.make(type_, **kwargs)
+        map_vals_test = traj_perm.permission_map()
         self.assertTrue(np.all(map_vals_true == map_vals_test))
-        point = (-2, -2)
+
+        kwargs['cond_point'] = (-2, -2)
         map_vals_true = np.array([
             1, 1, 1, 1, 1,
             0, 0, 1, 1, 1,
             0, 0, 0, 0, 1,
         ], dtype=bool)
-        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
+        traj_perm = utl._TrajectoryPermissionFactory.make(type_, **kwargs)
+        map_vals_test = traj_perm.permission_map()
         self.assertTrue(np.all(map_vals_true == map_vals_test))
 
-        specs = {
-            'type': 'GantryDominant',
-            'ndim': 2,
-            'ratio_table_gantry_rotation': 2.0,
+        kwargs = {
+            'nodes': [[-2, -1, 0, 1, 2], [-2, 0, 2]],
+            'ratio': 2.0,
+            'cond_point': (0, 0)
         }
-        point = (0, 0)
         map_vals_true = np.array([
             1, 1, 0, 1, 1,
             1, 1, 1, 1, 1,
             1, 1, 0, 1, 1,
         ], dtype=bool)
-        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
+        traj_perm = utl._TrajectoryPermissionFactory.make(type_, **kwargs)
+        map_vals_test = traj_perm.permission_map()
         self.assertTrue(np.all(map_vals_true == map_vals_test))
-        point = (2, -2)
+        kwargs['cond_point'] = (2, -2)
         map_vals_true = np.array([
             1, 1, 1, 1, 1,
             1, 1, 1, 1, 0,
             1, 1, 1, 0, 0,
         ], dtype=bool)
-        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
+        traj_perm = utl._TrajectoryPermissionFactory.make(type_, **kwargs)
+        map_vals_test = traj_perm.permission_map()
         self.assertTrue(np.all(map_vals_true == map_vals_test))
 
     def test_utils_permission_map_from_condition_file_2d(self):

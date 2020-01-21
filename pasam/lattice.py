@@ -121,9 +121,9 @@ class ConditionPoint(Condition):
 
     # Definition of the abstract method in `Condition`
     def permission_map(self, lattice):
-        point = self._components
         nodes = lattice.nodes
-        map_vals = utl.permission_map_from_condition_point(point, nodes)
+        cond_point = self._components
+        map_vals = utl.permission_map_from_condition_point(nodes, cond_point)
         return LatticeMap(lattice, map_vals)
 
 

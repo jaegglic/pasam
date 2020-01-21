@@ -11,10 +11,7 @@ NP_ORDER = 'F'
 # Dynamic Trajectory specifications
 AMS_TRAJ_SPECS = {
     # Rotation / Permission type
-    'type': 'GantryDominant',
-
-    # Dimension
-    'ndim': 2,
+    'type': 'GantryDominant2D',
 
     # Max ratio between table and gantry rotation angle:
     #   1.0: 3 neighbors (+- 2 table degrees per 2 gantry degrees)
