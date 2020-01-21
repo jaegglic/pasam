@@ -23,6 +23,7 @@ import numpy as np
 # Local imports
 from pasam._paths import PATH_TESTFILES
 import pasam.utils as utl
+from pasam.lattice import Lattice, LatticeMap
 
 
 class TestUtils(unittest.TestCase):
@@ -137,56 +138,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(nodes_true, nodes_test)
         self.assertTrue(np.all(map_vals_true == map_vals_test))
 
-    def test_utils_TrajectoryPermissionGantryDominant2D(self):
-        type_ = 'GantryDominant2D'
-
-        kwargs = {
-            'nodes': [[-2, -1, 0, 1, 2], [-2, 0, 2]],
-            'ratio': 1.0,
-            'cond_point': (0, 0)
-        }
-        map_vals_true = np.array([
-            1, 0, 0, 0, 1,
-            1, 1, 1, 1, 1,
-            1, 0, 0, 0, 1,
-        ], dtype=bool)
-        traj_perm = utl._TrajectoryPermissionFactory.make(type_, **kwargs)
-        map_vals_test = traj_perm.permission_map()
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
-        kwargs['cond_point'] = (-2, -2)
-        map_vals_true = np.array([
-            1, 1, 1, 1, 1,
-            0, 0, 1, 1, 1,
-            0, 0, 0, 0, 1,
-        ], dtype=bool)
-        traj_perm = utl._TrajectoryPermissionFactory.make(type_, **kwargs)
-        map_vals_test = traj_perm.permission_map()
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
-        kwargs = {
-            'nodes': [[-2, -1, 0, 1, 2], [-2, 0, 2]],
-            'ratio': 2.0,
-            'cond_point': (0, 0)
-        }
-        map_vals_true = np.array([
-            1, 1, 0, 1, 1,
-            1, 1, 1, 1, 1,
-            1, 1, 0, 1, 1,
-        ], dtype=bool)
-        traj_perm = utl._TrajectoryPermissionFactory.make(type_, **kwargs)
-        map_vals_test = traj_perm.permission_map()
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-        kwargs['cond_point'] = (2, -2)
-        map_vals_true = np.array([
-            1, 1, 1, 1, 1,
-            1, 1, 1, 1, 0,
-            1, 1, 1, 0, 0,
-        ], dtype=bool)
-        traj_perm = utl._TrajectoryPermissionFactory.make(type_, **kwargs)
-        map_vals_test = traj_perm.permission_map()
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
     def test_utils_permission_map_from_condition_file_2d(self):
         map_vals_true = np.array([
             1, 1, 1,
@@ -199,7 +150,7 @@ class TestUtils(unittest.TestCase):
         ], dtype=bool)
 
         file = PATH_TESTFILES + 'condmap2d_simple.txt'
-        map_vals_test = utl.permission_map_from_condition_file(file)
+        map_vals_test = utl.permission_array_from_condition_file(file)
         self.assertTrue(np.all(map_vals_true == map_vals_test))
 
     def test_utils_permission_map_from_condition_file_3d(self):
@@ -214,7 +165,7 @@ class TestUtils(unittest.TestCase):
         ], dtype=bool)
 
         file = PATH_TESTFILES + 'condmap3d_simple.txt'
-        map_vals_test = utl.permission_map_from_condition_file(file)
+        map_vals_test = utl.permission_array_from_condition_file(file)
         self.assertTrue(np.all(map_vals_true == map_vals_test))
 
     def test_utils_isincreasing(self):
@@ -226,41 +177,6 @@ class TestUtils(unittest.TestCase):
 
         self.assertFalse(utl.isincreasing([-0.11, -0.1100001, -0.110001]))
         self.assertFalse(utl.isincreasing([1, 2, 3, 4, 4]))
-
-    # # Test plot
-    # def test_plot_utils__ams_condition_point_to_bool_map(self):
-    #     import matplotlib.pyplot as plt
-    #     specs = {
-    #         'type': 'GantryDominant',
-    #         'ndim': 2,
-    #         'ratio_table_gantry_rotation': 0.5,
-    #     }
-    #     nodes = [np.arange(-179, 181, 2), np.arange(-89, 91, 2)]
-    #     point = (81, -21)
-    #     map_vals = utl._ams_condition_point_to_bool_map(point, nodes, specs)
-    #     plt.imshow(map_vals.reshape((180, 90), order='F').transpose()*1,
-    #                origin='lower')
-    #     plt.show()
-
-    # def test_plot_utils__ams_condition_point_mult(self):
-    #     import matplotlib.pyplot as plt
-    #     specs = {
-    #         'type': 'GantryDominant',
-    #         'ndim': 2,
-    #         'ratio_table_gantry_rotation': 2,
-    #     }
-    #     nodes = [np.arange(-179, 181, 2), np.arange(-89, 91, 2)]
-    #
-    #     point_a = (-81, -21)
-    #     map_vals_a = utl._ams_condition_point_to_bool_map(point_a, nodes, specs)
-    #
-    #     point_b = (-39, 21)
-    #     map_vals_b = utl._ams_condition_point_to_bool_map(point_b, nodes, specs)
-    #
-    #     map_vals = map_vals_a * map_vals_b
-    #     plt.imshow(map_vals.reshape((180, 90), order='F').transpose()*1,
-    #                origin='lower')
-    #     plt.show()
 
 
 if __name__ == '__main__':

@@ -152,6 +152,89 @@ class TestCondition(unittest.TestCase):
         self.assertTrue(len(cond_pnt_2D) == 2)
         self.assertTrue(len(cond_pnt_3D) == 3)
 
+    def test_ConditionPoint_permission_map_GantryDominant2D(self):
+        traj_type = 'GantryDominant2D'
+        lattice = Lattice([[-2, -1, 0, 1, 2], [-2, 0, 2]])
+
+        cond_point = ConditionPoint((0, 0))
+        kwargs = {
+            'traj_type':    traj_type,
+            'ratio':        1.0
+        }
+        cond_map = cond_point.permission_map(lattice, **kwargs)
+        map_vals_true = np.array([
+            1, 0, 0, 0, 1,
+            1, 1, 1, 1, 1,
+            1, 0, 0, 0, 1,
+        ], dtype=bool)
+        self.assertEqual(cond_map, LatticeMap(lattice, map_vals_true))
+
+        cond_point = ConditionPoint((-2, -2))
+        cond_map = cond_point.permission_map(lattice, **kwargs)
+        map_vals_true = np.array([
+            1, 1, 1, 1, 1,
+            0, 0, 1, 1, 1,
+            0, 0, 0, 0, 1,
+        ], dtype=bool)
+        self.assertEqual(cond_map, LatticeMap(lattice, map_vals_true))
+
+        cond_point = ConditionPoint((0, 0))
+        kwargs = {
+            'traj_type':    traj_type,
+            'ratio':        2.0
+        }
+        cond_map = cond_point.permission_map(lattice, **kwargs)
+        map_vals_true = np.array([
+            1, 1, 0, 1, 1,
+            1, 1, 1, 1, 1,
+            1, 1, 0, 1, 1,
+        ], dtype=bool)
+        self.assertEqual(cond_map, LatticeMap(lattice, map_vals_true))
+
+        cond_point = ConditionPoint((2, -2))
+        cond_map = cond_point.permission_map(lattice, **kwargs)
+        map_vals_true = np.array([
+            1, 1, 1, 1, 1,
+            1, 1, 1, 1, 0,
+            1, 1, 1, 0, 0,
+        ], dtype=bool)
+        self.assertEqual(cond_map, LatticeMap(lattice, map_vals_true))
+
+    # # Test plot
+    # def test_plot_ConditionPoint_permission_map_GantryDominant2D(self):
+    #     import matplotlib.pyplot as plt
+    #     traj_type = 'GantryDominant2D'
+    #     lattice = Lattice([np.arange(-179, 181, 2), np.arange(-89, 91, 2)])
+    #
+    #     kwargs = {
+    #         'traj_type': traj_type,
+    #         'ratio': 1.0
+    #     }
+    #     cond_point = ConditionPoint((81, -21))
+    #     cond = cond_point.permission_map(lattice, **kwargs)
+    #     plt.imshow(cond.map_vals.reshape((180, 90), order='F').transpose()*1,
+    #                origin='lower')
+    #     plt.show()
+    #
+    # def test_plot_ConditionPoint_permission_map_GantryDominant2D_mult(self):
+    #     import matplotlib.pyplot as plt
+    #     traj_type = 'GantryDominant2D'
+    #     lattice = Lattice([np.arange(-179, 181, 2), np.arange(-89, 91, 2)])
+    #
+    #     kwargs = {
+    #         'traj_type': traj_type,
+    #         'ratio': 0.5
+    #     }
+    #     cond_point = ConditionPoint((81, -21))
+    #     cond_a = cond_point.permission_map(lattice, **kwargs)
+    #     cond_point = ConditionPoint((-81, 21))
+    #     cond_b = cond_point.permission_map(lattice, **kwargs)
+    #
+    #     cond = cond_a * cond_b
+    #     plt.imshow(cond.map_vals.reshape((180, 90), order='F').transpose()*1,
+    #                origin='lower')
+    #     plt.show()
+
 
 if __name__ == '__main__':
     unittest.main()

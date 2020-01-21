@@ -299,11 +299,13 @@ class TestLattice(unittest.TestCase):
         map_vals = np.random.randn(lattice.nnodes)
         latticemap = LatticeMap(lattice, map_vals)
         latticmap_mul = LatticeMap(lattice, map_vals * num)
+        latticemap_squared = LatticeMap(lattice, map_vals**2)
 
         self.assertEqual(latticmap_mul, latticemap * num)
         self.assertTrue(latticmap_mul == latticemap * num)
         self.assertEqual(latticmap_mul, num * latticemap)
         self.assertTrue(latticmap_mul ==  num * latticemap)
+        self.assertEqual(latticemap * latticemap, latticemap_squared)
         with self.assertRaises(TypeError):
             latticemap * 'foobar'
 
@@ -446,11 +448,13 @@ class TestLattice(unittest.TestCase):
         map_vals = np.random.randn(lattice.nnodes)
         latticemap = LatticeMap(lattice, map_vals)
         latticmap_mul = LatticeMap(lattice, map_vals * num)
+        latticemap_squared = LatticeMap(lattice, map_vals**2)
 
         self.assertEqual(latticmap_mul, latticemap * num)
         self.assertTrue(latticmap_mul == latticemap * num)
         self.assertEqual(latticmap_mul, num * latticemap)
         self.assertTrue(latticmap_mul ==  num * latticemap)
+        self.assertEqual(latticemap * latticemap, latticemap_squared)
         with self.assertRaises(TypeError):
             latticemap * 'foobar'
 

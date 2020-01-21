@@ -9,7 +9,8 @@
 # Errors
 def err0000(type_):
     return f"ERR0000 " \
-           f"No :class:`_TrajectoryPermission` implementation for type='{type_}'"
+           f"No :class:`_TrajectoryPermission` implementation for " \
+           f"trajectory type='{type_}'"
 
 
 def err0001(vals):
@@ -33,8 +34,9 @@ def err1001(nodes):
            f"Nodes {nodes} are not strictly increasing"
 
 
-err1002 = f"ERR1002 " \
-          f"Unsupported operation `+` for different :class:`Lattice` objects"
+def err1002(op):
+    return f"ERR1002 " \
+           f"Unsupported operation `{op}` for different lattice objects"
 
 
 def err1003(nnodes, nval):
@@ -63,7 +65,8 @@ def err1004(obj, key):
 # Errors
 def err3000(type_):
     return f"ERR3000 " \
-           f"No :class:`Sampler` implementation for type='{type_}'"
+           f"No :class:`Sampler` implementation for " \
+           f"trajectory type='{type_}'"
 
 
 if __name__ == '__main__':

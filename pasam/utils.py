@@ -36,7 +36,7 @@ import pasam._settings as settings
 _NP_ORDER = settings.NP_ORDER
 
 
-# `Public` methods
+# Public methods
 def findall_num_in_str(s):
     """Extracts all numbers in a string.
 
@@ -69,7 +69,7 @@ def isincreasing(vals, strict=True):
         return np.all(vals[:-1] <= vals[1:])
 
 
-def permission_map_from_condition_file(file):
+def permission_array_from_condition_file(file):
     """Reads a permission map from a given .txt file.
 
     Args:
@@ -86,28 +86,6 @@ def permission_map_from_condition_file(file):
     map_vals = _ams_val_map_to_bool_map(vals)
 
     return map_vals
-
-
-def permission_map_from_condition_point(nodes, cond_point=None):
-    """Generates a permission map from a conditioning point.
-
-    Args:
-        nodes (list): Tensor product nodes.
-        cond_point (tuple, optional): Condition point components.
-
-    Returns:
-        ndarray: Boolean array for permitted (``True``) and blocked (``False``)
-            nodes.
-    """
-    type_ = settings.AMS_TRAJ_SPECS['type']
-    kwargs = {
-        'nodes':        nodes,
-        'ratio':        settings.AMS_TRAJ_SPECS['ratio_table_gantry_rotation'],
-        'cond_point':   cond_point
-    }
-
-    traj_perm = _TrajectoryPermissionFactory.make(type_, **kwargs)
-    return traj_perm.permission_map()
 
 
 def readlines_(file, remove_blank_lines=False):
@@ -198,8 +176,7 @@ def write_trajectory_to_txt(fname, points):
     _ams_write_trajectory_to_txt(fname, points)
 
 
-# -----------------------------------------------------------------------------
-# `Private` Methods
+# Private Methods
 def _ams_val_map_to_bool_map(vals):
     """Assigns `0` to ``True`` and `1` to ``False``.
 
@@ -252,103 +229,3 @@ def _str2num(s):
         return int(s)
     except ValueError:
         return float(s)
-
-
-# `Private` Classes
-class _TrajectoryPermission(abc.ABC):
-    """`_TrajectoryPermission` defines an abstract parent class for the machine
-    movement permissions.
-
-    Notes:
-        Any sub-class of `_PointTrajectory` must provide an implementation of
-
-            - :meth:`permission_map`
-    """
-    
-    @abc.abstractmethod
-    def permission_map(self):
-        """Generates a permission map.
-
-        Returns:
-            ndarray: Boolean array for permitted (True) and blocked (False)
-                nodes.
-        """
-
-
-class _TrajectoryPermissionFactory:
-    """`_TrajectoryPermissionFactory` produces instances of
-    :class:`_PointTrajectory`.
-    """
-
-    @staticmethod
-    def make(type_, **kwargs):
-        """Creates `_TrajectoryPermission` objects.
-
-        Args:
-            type_ (str): Trajectory permission type.
-            kwargs (dict): Type specific arguments.
-
-        Returns:
-            _TrajectoryPermission: Trajectory permission object.
-        """
-
-        if type_ == 'GantryDominant2D':
-            return _TrajectoryPermissionGantryDominant2D(**kwargs)
-        else:
-            raise ValueError(msg.err0000(type_))
-
-
-class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
-    """`_TrajectoryPermissionGantryDominant2D` is the usual 2D gantry dominated
-    movement restriction class.
-
-    Args:
-        nodes (list): Tensor product nodes.
-        ratio (float): Maximum allowed ratio between table and gantry angle
-            rotation.
-        cond_point (tuple, optional): Condition point components.
-    """
-
-    def __init__(self, nodes, ratio, cond_point=None):
-        self._nodes = nodes
-        self._ratio = ratio
-        self._cond_point = cond_point
-
-    def permission_map(self):
-        nnodes_dim = tuple(len(n) for n in self._nodes)
-        if self._cond_point is None:
-            return np.ones(nnodes_dim, dtype=bool)
-
-        return self._permission_map_from_condition_point()
-
-    def _permission_map_from_condition_point(self):
-        """Returns a two-dimensional permission map according to a conditioning
-        point.
-        """
-        # Gantry/Table indices in self._nodes and self._condition_point
-        IND_GANTRY = 0
-        IND_TABLE = 1
-
-        # Initialization
-        nodes = [np.asarray(n) for n in self._nodes]
-        cond_point = self._cond_point
-        ratio = self._ratio
-
-        # Loop in gantry direction through the lattice
-        nnodes_dim = tuple(len(n) for n in self._nodes)
-        map_vals = np.zeros(nnodes_dim, dtype=bool)
-        for inode, node in enumerate(nodes[IND_GANTRY]):
-            v_range = abs(node - cond_point[IND_GANTRY]) * ratio
-            v_min = cond_point[IND_TABLE] - v_range
-            v_max = cond_point[IND_TABLE] + v_range
-
-            ind_true = np.logical_and(nodes[IND_TABLE] >= v_min,
-                                      nodes[IND_TABLE] <= v_max)
-            map_vals[inode, ind_true] = True
-        return map_vals.ravel(order=_NP_ORDER)
-
-
-class _TrajectoryPermissionGantryDominant3D(_TrajectoryPermission):
-    # TODO: Define _TrajectoryPermissionGantryDominant3D
-    # TODO: Add tests for _TrajectoryPermissionGantryDominant3D
-    pass

@@ -74,21 +74,21 @@ class SamplerFactory:
     """
 
     @staticmethod
-    def make(type_, **kwargs):
+    def make(prior_map, traj_type):
         """Creates :class:`Sampler` objects.
 
         Args:
-            type_ (str): Trajectory sampler type.
-            kwargs (dict): Type specific arguments.
+            prior_map (LatticeMap): Computational lattice and it's prior map.
+            traj_type (str): Trajectory type.
 
         Returns:
             Sampler: Sampling algorithm object.
         """
 
-        if type_ == 'GantryDominant2D':
-            return SamplerGantryDominant2D(**kwargs)
+        if traj_type == 'GantryDominant2D':
+            return SamplerGantryDominant2D(prior_map)
         else:
-            raise ValueError(msg.err3000(type_))
+            raise ValueError(msg.err3000(traj_type))
 
 
 class SamplerGantryDominant2D(Sampler):

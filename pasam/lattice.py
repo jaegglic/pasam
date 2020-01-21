@@ -56,12 +56,13 @@ class Condition(abc.ABC):
     """
 
     @abc.abstractmethod
-    def permission_map(self, lattice):
+    def permission_map(self, lattice, **kwargs):
         """Produces a permission map with permitted (``True``) and blocked
         (``False``) lattice nodes.
 
         Args:
-            lattice (Lattice): Object defining a lattice.
+            lattice (Lattice): Object defining the computational lattice.
+            kwargs (dict): Type specific arguments.
 
         Returns:
             LatticeMap: Lattice map issued from the condition.
@@ -86,8 +87,8 @@ class ConditionFile(Condition):
         return self.__repr__()
 
     # Definition of the abstract method in `Condition`
-    def permission_map(self, lattice):
-        map_vals = utl.permission_map_from_condition_file(self._file)
+    def permission_map(self, lattice, **kwargs):
+        map_vals = utl.permission_array_from_condition_file(self._file)
         return LatticeMap(lattice, map_vals)
 
 
@@ -120,10 +121,9 @@ class ConditionPoint(Condition):
         return self.__repr__()
 
     # Definition of the abstract method in `Condition`
-    def permission_map(self, lattice):
-        nodes = lattice.nodes
-        cond_point = self._components
-        map_vals = utl.permission_map_from_condition_point(nodes, cond_point)
+    def permission_map(self, lattice, **kwargs):
+        traj_perm = _TrajectoryPermissionFactory.make(**kwargs)
+        map_vals = traj_perm.permission_array_from_cond_point(lattice, self._components)
         return LatticeMap(lattice, map_vals)
 
 
@@ -204,7 +204,7 @@ class LatticeMap:
     """`LatticeMap` defines a value map associated to a :class:`Lattice`.
 
     Args:
-        lattice (Lattice): Object defining a lattice.
+        lattice (Lattice): Object defining the computational lattice.
         map_vals (array_like, shape=(n,)): Map values associated to the lattice
             nodes.
         dtype (data-type, optional): The desired data-type for the map_values.
@@ -212,7 +212,7 @@ class LatticeMap:
             requirement by `numpy`.
 
     Attributes:
-        lattice (Lattice): Object defining a lattice
+        lattice (Lattice): Object defining the computational lattice
         map_vals (ndarray, shape=(n,)): Map values associated to the lattice
             nodes
     """
@@ -224,7 +224,7 @@ class LatticeMap:
             if self.lattice is other.lattice or self.lattice == other.lattice:
                 return LatticeMap(self.lattice, self.map_vals + other.map_vals)
             else:
-                raise ValueError(msg.err1002)
+                raise ValueError(msg.err1002('+'))
 
         elif isinstance(other, numbers.Number):
             return LatticeMap(self.lattice, self.map_vals + other)
@@ -253,10 +253,17 @@ class LatticeMap:
         self.map_vals = map_vals
 
     def __mul__(self, other):
-        """Supports multiplication by ``numbers.Number``."""
-        if isinstance(other, numbers.Number):
-            map_vals = self.map_vals * other
-            return LatticeMap(self.lattice, map_vals)
+        """Supports `LatticeMap` * `LatticeMap` as well as `LatticeMap` *
+        `numbers.Number`.
+        """
+        if isinstance(other, LatticeMap):
+            if self.lattice is other.lattice or self.lattice == other.lattice:
+                return LatticeMap(self.lattice, self.map_vals * other.map_vals)
+            else:
+                raise ValueError(msg.err1002('*'))
+
+        elif isinstance(other, numbers.Number):
+            return LatticeMap(self.lattice, self.map_vals * other)
         return NotImplemented
 
     def __radd__(self, other):
@@ -292,7 +299,8 @@ class LatticeMap:
 
         Args:
             file (str or pathlib.Path): File or filename.
-            lattice (Lattice, optional): Object defining a lattice.
+            lattice (Lattice, optional): Object defining the computational
+                lattice.
 
         Returns:
             LatticeMap: Object defining a lattice map
@@ -306,6 +314,97 @@ class LatticeMap:
             raise ValueError(msg.err1000(file, lattice))
 
         return cls(lattice, map_vals)
+
+
+# Private Classes
+class _TrajectoryPermission(abc.ABC):
+    """`_TrajectoryPermission` defines an abstract parent class for the machine
+    movement permissions.
+
+    Notes:
+        Any sub-class of `_PointTrajectory` must provide an implementation of
+
+            - :meth:`permission_map`
+    """
+
+    @abc.abstractmethod
+    def permission_array_from_cond_point(self, lattice, cond_point):
+        """Generates a permission array based on a computational lattice an a
+        condition point.
+
+        Args:
+            lattice (Lattice, optional): Object defining the computational
+                lattice.
+            cond_point (array_like, shape=(n,)): Coordinate components.
+
+        Returns:
+            ndarray: Boolean array for permitted (True) and blocked (False)
+                nodes.
+        """
+
+
+class _TrajectoryPermissionFactory:
+    """`_TrajectoryPermissionFactory` produces instances of
+    :class:`_PointTrajectory`.
+    """
+
+    @staticmethod
+    def make(traj_type, **kwargs):
+        """Creates `_TrajectoryPermission` objects.
+
+        Args:
+            traj_type (str): Trajectory type.
+            kwargs (dict): Type specific arguments.
+
+        Returns:
+            _TrajectoryPermission: Trajectory permission object.
+        """
+        if traj_type == 'GantryDominant2D':
+            return _TrajectoryPermissionGantryDominant2D(**kwargs)
+        else:
+            raise ValueError(msg.err0000(traj_type))
+
+
+class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
+    """`_TrajectoryPermissionGantryDominant2D` is the usual 2D gantry dominated
+    movement restriction class.
+
+    Args:
+        ratio (float): Maximum allowed ratio between table and gantry angle
+            rotation.
+    """
+
+    def __init__(self, ratio):
+        self._ratio = ratio
+
+    def permission_array_from_cond_point(self, lattice, cond_point):
+        nnodes_dim = lattice.nnodes_dim
+        if cond_point is None:
+            return np.ones(nnodes_dim, dtype=bool)
+        return self._permission_map_from_condition_point(lattice, cond_point)
+
+    def _permission_map_from_condition_point(self, lattice, cond_point):
+        """Returns a two-dimensional permission map according to a conditioning
+        point.
+        """
+        # Gantry/Table indices in self._nodes and self._condition_point
+        IND_GANTRY = 0
+        IND_TABLE = 1
+
+        # Initialization
+        nodes = lattice.nodes
+        map_vals = np.zeros(lattice.nnodes_dim, dtype=bool)
+
+        # Loop in gantry direction through the lattice
+        for inode, node in enumerate(nodes[IND_GANTRY]):
+            v_range = abs(node - cond_point[IND_GANTRY]) * self._ratio
+            v_min = cond_point[IND_TABLE] - v_range
+            v_max = cond_point[IND_TABLE] + v_range
+
+            ind_true = np.logical_and(nodes[IND_TABLE] >= v_min,
+                                      nodes[IND_TABLE] <= v_max)
+            map_vals[inode, ind_true] = True
+        return map_vals.ravel(order=_NP_ORDER)
 
 
 if __name__ == '__main__':
