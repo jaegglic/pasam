@@ -36,8 +36,6 @@ import pasam._messages as msg
 import pasam._settings as settings
 import pasam.utils as utl
 
-# Constants
-
 # Constants and Variables
 _NP_ORDER = settings.NP_ORDER
 _rlib = reprlib.Repr()
@@ -74,21 +72,24 @@ class ConditionFile(Condition):
 
     Args:
         file (str or pathlib.Path): File or filename.
+
+    Attributes:
+        file (str or pathlib.Path): File or filename.
     """
 
     def __init__(self, file):
-        self._file = file
+        self.file = file
 
     def __repr__(self):
         cls_name = type(self).__name__
-        return f'{cls_name}(file={self._file})'
+        return f'{cls_name}(file={self.file})'
 
     def __str__(self):
         return self.__repr__()
 
     # Definition of the abstract method in `Condition`
     def permission_map(self, lattice, **kwargs):
-        map_vals = utl.permission_array_from_condition_file(self._file)
+        map_vals = utl.permission_array_from_condition_file(self.file)
         return LatticeMap(lattice, map_vals)
 
 
@@ -97,24 +98,27 @@ class ConditionPoint(Condition):
 
     Args:
         components (array_like, shape=(n,)): Coordinate components.
+
+    Attributes:
+        components (ndarray, shape=(n,)): Coordinate components.
     """
 
     def __eq__(self, other):
         if isinstance(other, ConditionPoint):
-            return np.all(self._components == other._components)
+            return np.all(self.components == other.components)
         elif isinstance(other, tuple) or isinstance(other, list):
-            return np.all(self._components == np.asarray(other))
+            return np.all(self.components == np.asarray(other))
         return False
 
     def __init__(self, components):
-        self._components = np.asarray(components)
+        self.components = np.asarray(components)
 
     def __len__(self):
-        return len(self._components)
+        return len(self.components)
 
     def __repr__(self):
         cls_name = type(self).__name__
-        components_repr = _rlib.repr(self._components)
+        components_repr = _rlib.repr(self.components)
         return f'{cls_name}(components={components_repr})'
 
     def __str__(self):
@@ -123,7 +127,7 @@ class ConditionPoint(Condition):
     # Definition of the abstract method in `Condition`
     def permission_map(self, lattice, **kwargs):
         traj_perm = _TrajectoryPermissionFactory.make(**kwargs)
-        map_vals = traj_perm.permission_array_from_cond_point(lattice, self._components)
+        map_vals = traj_perm.permission_array_from_cond_point(lattice, self.components)
         return LatticeMap(lattice, map_vals)
 
 
@@ -135,10 +139,10 @@ class Lattice:
     nodes. The nodes in one dimension is a set of strictly increasing values.
 
     Args:
-        nodes (list): Tensor product nodes.
+        nodes (list of array_like): Tensor product nodes.
 
     Attributes:
-        nodes (list): Tensor product nodes.
+        nodes (list of ndarray): Tensor product nodes.
 
     """
 
@@ -171,6 +175,22 @@ class Lattice:
 
     def __str__(self):
         return self.__repr__()
+
+    def indices_from_point(self, components):
+        """Returns the indices for the nearest node in each direction.
+
+        Args:
+            components (array_like, shape=(n,)): Components of point.
+
+        Returns:
+            tuple: Indices of closest node.
+        """
+        if len(components) != self.ndim:
+            raise ValueError(msg.err1005(self.ndim, len(components)))
+
+        ind = [np.argmin(np.abs(nodes - comp))
+               for nodes, comp in zip(self.nodes, components)]
+        return tuple(ind)
 
     @property
     def ndim(self):
@@ -212,9 +232,9 @@ class LatticeMap:
             requirement by `numpy`.
 
     Attributes:
-        lattice (Lattice): Object defining the computational lattice
+        lattice (Lattice): Object defining the computational lattice.
         map_vals (ndarray, shape=(n,)): Map values associated to the lattice
-            nodes
+            nodes.
     """
 
     def __add__(self, other):
@@ -280,6 +300,17 @@ class LatticeMap:
 
     def __str__(self):
         return self.__repr__()
+
+    def indices_from_point(self, components):
+        """Returns the indices for the nearest node in the lattice.
+
+        Args:
+            components (array_like, shape=(n,)): Components of point.
+
+        Returns:
+            tuple: Indices of closest node.
+        """
+        return self.lattice.indices_from_point(components)
 
     @property
     def ndim(self):
@@ -388,21 +419,21 @@ class _TrajectoryPermissionGantryDominant2D(_TrajectoryPermission):
         point.
         """
         # Gantry/Table indices in self._nodes and self._condition_point
-        IND_GANTRY = 0
-        IND_TABLE = 1
+        dim_gantry  = settings.DIM_GANTRY
+        dim_table   = settings.DIM_TABLE
 
         # Initialization
         nodes = lattice.nodes
         map_vals = np.zeros(lattice.nnodes_dim, dtype=bool)
 
         # Loop in gantry direction through the lattice
-        for inode, node in enumerate(nodes[IND_GANTRY]):
-            v_range = abs(node - cond_point[IND_GANTRY]) * self._ratio
-            v_min = cond_point[IND_TABLE] - v_range
-            v_max = cond_point[IND_TABLE] + v_range
+        for inode, node in enumerate(nodes[dim_gantry]):
+            v_range = abs(node - cond_point[dim_gantry]) * self._ratio
+            v_min = cond_point[dim_table] - v_range
+            v_max = cond_point[dim_table] + v_range
 
-            ind_true = np.logical_and(nodes[IND_TABLE] >= v_min,
-                                      nodes[IND_TABLE] <= v_max)
+            ind_true = np.logical_and(nodes[dim_table] >= v_min,
+                                      nodes[dim_table] <= v_max)
             map_vals[inode, ind_true] = True
         return map_vals.ravel(order=_NP_ORDER)
 

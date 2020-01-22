@@ -23,7 +23,6 @@ Generic methods
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # Standard library
-import abc
 import re
 from pathlib import Path
 # Third party requirements

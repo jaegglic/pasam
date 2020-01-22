@@ -51,6 +51,12 @@ def err1004(obj, key):
            f"for '{obj}'."
 
 
+def err1005(ndim, ncomp):
+    return f"ERR1005 " \
+           f"Point dimension (={ncomp}) does not match lattice dimension " \
+           f"(={ndim})."
+
+
 # ------------------------------ 2XXX pathgen.py ------------------------------
 # Warnings
 
@@ -60,6 +66,7 @@ def err1004(obj, key):
 
 # ----------------------------- 3XXX sampling.py ------------------------------
 # Warnings
+warn3000 = "WARNING 3000 The sum of the sliced map values is equal to 0."
 
 
 # Errors

@@ -26,17 +26,23 @@ Methods
 # Standard library
 import abc
 import reprlib
+import warnings
 # Third party requirements
+import numpy as np
 # Local imports
 import pasam._settings as settings
 import pasam._messages as msg
-
-# Constants
+from pasam.lattice import ConditionPoint
+from pasam.pathgen import Trajectory
 
 # Constants and Variables
 _NP_ORDER = settings.NP_ORDER
+_NP_SEED = 4541285
+_DIM_GANTRY = settings.DIM_GANTRY
+
 _rlib = reprlib.Repr()
 _rlib.maxlist = settings.RLIB_MAXLIST
+np.random.seed(settings.NP_SEED)
 
 
 class Sampler(abc.ABC):
@@ -94,13 +100,17 @@ class SamplerFactory:
 class SamplerGantryDominant2D(Sampler):
     """`SamplerGantryDominant2D` is the usual 2D gantry dominated trajectory
     movement sampler class.
+
+    Attributes:
+        ntrajectory (int): Length of trajectory.
     """
 
     def __init__(self, prior_map):
         super().__init__(prior_map)
+        self.ntrajectory = self._prior_map.lattice.nnodes_dim[_DIM_GANTRY]
 
     def __call__(self, conditions):
-        """Start the sampling algorithm.
+        """Executes the sampling algorithm.
 
         Args:
             conditions (list of Condition): Set of conditions.
@@ -108,10 +118,49 @@ class SamplerGantryDominant2D(Sampler):
         Returns:
             Trajectory: Sampled trajectory
         """
+        trajectory = np.array([None for _ in range(self.ntrajectory)])
+        ind_to_do = np.array([True for _ in range(self.ntrajectory)])
 
-        # _gantry_ind = 0       # maybe define it in the settings!!!
-        # cnd_pts = [cnd for cnd in conditions if isinstance(cond, ConditionPoint)]
-        # gantry_cnd_ind = [self.prior_map.point_to_index(cnd.point)[_gantry_ind]]
-        # smpl_ind = [ind for ind in gantry_all_ind if not ind in gantry_cnd_ind]
+        self._fix_traj_points_cond(trajectory, ind_to_do, conditions)
+        self._fix_traj_points_smpl(trajectory, ind_to_do)
 
-        pass
+        return Trajectory(trajectory)
+
+    def _fix_traj_points_cond(self, trajectory, ind_to_do, conditions):
+        lattice = self._prior_map.lattice
+        for cond in conditions:
+            if isinstance(cond, ConditionPoint):
+                pos = lattice.indices_from_point(cond.components)[_DIM_GANTRY]
+                ind_to_do[pos] = False
+                trajectory[pos] = cond.components
+
+    def _fix_traj_points_smpl(self, trajectory, ind_to_do):
+        perm_map = self._prior_map
+        ndim = perm_map.ndim
+        nnodes_dim = perm_map.lattice.nnodes_dim
+        nnodes_dim_red = tuple([n for dim, n in enumerate(nnodes_dim) if dim != _DIM_GANTRY])
+        positions = np.arange(len(ind_to_do))
+        while np.any(ind_to_do):
+            pos = np.random.choice(positions[ind_to_do])
+            ind_to_do[pos] = False
+
+            pos_slice = [slice(None) for _ in range(ndim)]
+            pos_slice[_DIM_GANTRY] = pos
+            map_slice = perm_map[tuple(pos_slice)]
+
+
+            distribution = map_slice.map_vals
+            try:
+                distribution = distribution / np.sum(distribution)
+            except (ZeroDivisionError, FloatingPointError,
+                    RuntimeWarning, RuntimeError):
+                distribution = np.ones_like(distribution) / len(distribution)
+                warnings.warn(msg.warn3000)
+
+            # use a command like: (maybe put the slice outside of the while)
+            # use nnodes_dim_red of above
+            # slice_ind = [(i, j) for j in range(len(nodes_colli)) for i in range(len(nodes))]
+            # np.random.choice(slice_ind, p=distribution)
+
+
+            trajectory[pos] = 1

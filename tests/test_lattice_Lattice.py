@@ -25,10 +25,10 @@ import pasam._settings as settings
 from pasam._paths import PATH_TESTFILES
 from pasam.lattice import Lattice, LatticeMap
 
-# Constants
+# Constants and Variables
 _NP_ORDER = settings.NP_ORDER
-_NP_SEED = 458967
-np.random.seed(_NP_SEED)
+
+np.random.seed(settings.NP_SEED)
 
 
 class TestLattice(unittest.TestCase):
@@ -121,6 +121,25 @@ class TestLattice(unittest.TestCase):
         self.assertTrue(isinstance(lattice.nnodes, int))
         self.assertEqual(lattice.nnodes, nnodes)
 
+    def test_Lattice2D_indices(self):
+        lattice = Lattice(self.nodes2D)
+
+        components = (2, -0.5)
+        ind_point = lattice.indices_from_point(components)
+        self.assertEqual(ind_point, (1, 1))
+
+        components = (1100, -0.5)
+        ind_point = lattice.indices_from_point(components)
+        self.assertEqual(ind_point, (5, 1))
+
+        components = (2, -0.499)
+        ind_point = lattice.indices_from_point(components)
+        self.assertEqual(ind_point, (1, 2))
+
+        components = (2, -0.5, -1)
+        with self.assertRaises(ValueError):
+            lattice.indices_from_point(components)
+
     # Tests associated to Lattice3D
     def test_Lattice3D_gen(self):
         lattice = Lattice(self.nodes3D)
@@ -190,6 +209,25 @@ class TestLattice(unittest.TestCase):
         self.assertEqual(lattice.nnodes_dim, nnodes_dim)
         self.assertTrue(isinstance(lattice.nnodes, int))
         self.assertEqual(lattice.nnodes, nnodes)
+
+    def test_Lattice3D_indices_from_point(self):
+        lattice = Lattice(self.nodes3D)
+
+        components = (2, -0.5, 1000)
+        ind_point = lattice.indices_from_point(components)
+        self.assertEqual(ind_point, (1, 1, 2))
+
+        components = (1100, -0.5, -100)
+        ind_point = lattice.indices_from_point(components)
+        self.assertEqual(ind_point, (5, 1, 0))
+
+        components = (2, -0.499, -11001.55)
+        ind_point = lattice.indices_from_point(components)
+        self.assertEqual(ind_point, (1, 2, 0))
+
+        components = (2, -0.5)
+        with self.assertRaises(ValueError):
+            lattice.indices_from_point(components)
 
     # Tests associated to LatticeMap2D
     def test_LatticeMap2D_gen(self):

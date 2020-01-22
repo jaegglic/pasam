@@ -2,11 +2,17 @@
 """Problem specific settings file.
 """
 
+# Dimensional indices of physical problem
+DIM_GANTRY   = 0
+DIM_TABLE    = 1
+DIM_COLLI    = 2
+
 # __repr__ handling of long arrays
 RLIB_MAXLIST = 3
 
-# 'Fortran' reordering style (if changed, unit-tests will fail)
-NP_ORDER = 'F'
+# numpy settings
+NP_SEED = 458967
+NP_ORDER = 'F'      # 'Fortran' reordering style (otherwise unit-tests fail)
 
 # Dynamic Trajectory specifications
 AMS_TRAJ_SPECS = {

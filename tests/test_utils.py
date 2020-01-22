@@ -23,7 +23,6 @@ import numpy as np
 # Local imports
 from pasam._paths import PATH_TESTFILES
 import pasam.utils as utl
-from pasam.lattice import Lattice, LatticeMap
 
 
 class TestUtils(unittest.TestCase):

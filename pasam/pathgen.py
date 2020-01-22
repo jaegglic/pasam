@@ -28,8 +28,6 @@ import reprlib
 import pasam._settings as settings
 import pasam.utils as utl
 
-# Constants
-
 # Constants and Variables
 _NP_ORDER = settings.NP_ORDER
 _rlib = reprlib.Repr()
@@ -40,7 +38,7 @@ class Trajectory:
     """Definition of dynamic trajectories.
 
     Args:
-        points (list): Sequence of trajectory points.
+        points (array_like): Sequence of trajectory points.
 
     Attributes:
         points (list): Sequence of trajectory points.
