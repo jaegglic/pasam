@@ -2,7 +2,7 @@
 """Collection of error and warning messages.
 """
 
-# ------------------------------- 0XXX utils.py -------------------------------
+# -------------------------------- 0XXX utils ---------------------------------
 # Warnings
 
 
@@ -19,7 +19,12 @@ def err0001(vals):
            f"or `False`"
 
 
-# ------------------------------ 1XXX lattice.py ------------------------------
+def err0002(order):
+    return f"ERR0002 " \
+           f"Unknown cartesian product ordering '{order}'"
+
+
+# ------------------------------- 1XXX lattice --------------------------------
 # Warnings
 
 
@@ -57,14 +62,17 @@ def err1005(ndim, ncomp):
            f"(={ndim})."
 
 
-# ------------------------------ 2XXX pathgen.py ------------------------------
+# ------------------------------ 2XXX trajectory ------------------------------
 # Warnings
 
 
 # Errors
+def err2000(shape, dim):
+    return f'Shape of linear indices array {shape} ' \
+           f'does not match dimensions {dim}.'
 
 
-# ----------------------------- 3XXX sampling.py ------------------------------
+# ------------------------------ 3XXX sampling --------------------------------
 # Warnings
 warn3000 = "WARNING 3000 The sum of the sliced map values is equal to 0."
 
@@ -74,8 +82,3 @@ def err3000(type_):
     return f"ERR3000 " \
            f"No :class:`Sampler` implementation for " \
            f"trajectory type='{type_}'"
-
-
-if __name__ == '__main__':
-    print(err0000('GantryDominant'))
-    print(err1001([1, 2, 4, 3]))

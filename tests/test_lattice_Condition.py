@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """UNIT TEST FILE
 
-Unit tests for the utilities in `pasam.utils.py`.
+Unit tests for the Condition* classes in `pasam.lattice`.
 """
 
 # -------------------------------------------------------------------------

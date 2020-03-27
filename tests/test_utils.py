@@ -137,36 +137,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(nodes_true, nodes_test)
         self.assertTrue(np.all(map_vals_true == map_vals_test))
 
-    def test_utils_permission_map_from_condition_file_2d(self):
-        map_vals_true = np.array([
-            1, 1, 1,
-            1, 1, 1,
-            1, 1, 1,
-            1, 1, 0,
-            1, 0, 0,
-            0, 0, 0,
-            0, 0, 0,
-        ], dtype=bool)
-
-        file = PATH_TESTFILES + 'condmap2d_simple.txt'
-        map_vals_test = utl.permission_array_from_condition_file(file)
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
-    def test_utils_permission_map_from_condition_file_3d(self):
-        map_vals_true = np.array([
-            1, 1, 1,
-            0, 1, 0,
-            0, 0, 1,
-            0, 1, 0,
-            0, 0, 0,
-            1, 1, 0,
-            0, 1, 1,
-        ], dtype=bool)
-
-        file = PATH_TESTFILES + 'condmap3d_simple.txt'
-        map_vals_test = utl.permission_array_from_condition_file(file)
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
     def test_utils_isincreasing(self):
         self.assertTrue(utl.isincreasing([1]))
         self.assertTrue(utl.isincreasing([1, 2, 3, 4, 5]))
@@ -176,6 +146,127 @@ class TestUtils(unittest.TestCase):
 
         self.assertFalse(utl.isincreasing([-0.11, -0.1100001, -0.110001]))
         self.assertFalse(utl.isincreasing([1, 2, 3, 4, 4]))
+
+    def test_utils_tensor_dot_lists_of_int(self):
+        lists = [[1., 2, 3]]
+        tensor_dot_test = utl.cartesian_product(*lists, order='F')
+        tensor_dot_true = [
+            (1,), (2,), (3,),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        tensor_dot_test = utl.cartesian_product(*lists, order='C')
+        tensor_dot_true = [
+            (1,), (2,), (3,),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        lists = [[1, 2, 3], [4, 5]]
+        tensor_dot_test = utl.cartesian_product(*lists, order='F')
+        tensor_dot_true = [
+            (1, 4), (2, 4), (3, 4),
+            (1, 5), (2, 5), (3, 5),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        tensor_dot_test = utl.cartesian_product(*lists, order='C')
+        tensor_dot_true = [
+            (1, 4), (1, 5),
+            (2, 4), (2, 5),
+            (3, 4), (3, 5),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        lists = [[1, 2, 3], [4, 5], [6, 7, 8]]
+        tensor_dot_test = utl.cartesian_product(*lists, order='F')
+        tensor_dot_true = [
+            (1, 4, 6), (2, 4, 6), (3, 4, 6),
+            (1, 5, 6), (2, 5, 6), (3, 5, 6),
+            (1, 4, 7), (2, 4, 7), (3, 4, 7),
+            (1, 5, 7), (2, 5, 7), (3, 5, 7),
+            (1, 4, 8), (2, 4, 8), (3, 4, 8),
+            (1, 5, 8), (2, 5, 8), (3, 5, 8),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        tensor_dot_test = utl.cartesian_product(*lists, order='C')
+        tensor_dot_true = [
+            (1, 4, 6), (1, 4, 7), (1, 4, 8),
+            (1, 5, 6), (1, 5, 7), (1, 5, 8),
+            (2, 4, 6), (2, 4, 7), (2, 4, 8),
+            (2, 5, 6), (2, 5, 7), (2, 5, 8),
+            (3, 4, 6), (3, 4, 7), (3, 4, 8),
+            (3, 5, 6), (3, 5, 7), (3, 5, 8),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        lists = [1, 2, 3]
+        with self.assertRaises(TypeError):
+            utl.cartesian_product(*lists, order='F')
+
+        lists = [np.array([1, 2, 3])]
+        tensor_dot_test = utl.cartesian_product(*lists)
+        tensor_dot_true = [
+            (1,), (2,), (3,),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        lists = [np.array([1, 2, 3]), np.array([4, 5])]
+        tensor_dot_test = utl.cartesian_product(*lists)
+        tensor_dot_true = [
+            (1, 4), (2, 4), (3, 4),
+            (1, 5), (2, 5), (3, 5),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        lists = np.array([(1, 2, 3), (4, 5), (6, 7, 8)])
+        tensor_dot_test = utl.cartesian_product(*lists)
+        tensor_dot_true = [
+            (1, 4, 6), (2, 4, 6), (3, 4, 6),
+            (1, 5, 6), (2, 5, 6), (3, 5, 6),
+            (1, 4, 7), (2, 4, 7), (3, 4, 7),
+            (1, 5, 7), (2, 5, 7), (3, 5, 7),
+            (1, 4, 8), (2, 4, 8), (3, 4, 8),
+            (1, 5, 8), (2, 5, 8), (3, 5, 8),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+    def test_utils_conical_opening_indicator(self):
+        cntr = -1.5
+        dist = 2.75
+        fact = 1
+        alpha = np.pi / 2
+        points = [
+            -4.25 * 1.000001,
+            -4.25 * 1.001,
+            cntr-fact*dist,
+            cntr,
+            cntr+fact*dist,
+            1.25 * 1.001,
+            1.25 * 1.000001,
+        ]
+        ind_true = np.array([True, False, True, True, True, False, True])
+
+        ind_test = utl.conical_opening_indicator(cntr, dist, alpha, points)
+        self.assertTrue(all(ind_true == ind_test))
+
+        cntr = 10
+        dist = 5
+        fact = 0.5
+        alpha = 2*np.arctan(fact)
+        points = [
+            7.5 * 0.999999,
+            7.5 * 0.999,
+            cntr-fact*dist,
+            cntr,
+            cntr+fact*dist,
+            12.5 * 1.001,
+            12.5 * 1.000001,
+        ]
+        ind_true = np.array([True, False, True, True, True, False, True])
+
+        ind_test = utl.conical_opening_indicator(cntr, dist, alpha, points)
+        self.assertTrue(all(ind_true == ind_test))
 
 
 if __name__ == '__main__':

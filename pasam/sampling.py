@@ -27,29 +27,38 @@ Methods
 import abc
 import reprlib
 import warnings
+import functools
 # Third party requirements
 import numpy as np
 # Local imports
-import pasam._settings as settings
+from pasam._settings import DIM_GANTRY, RLIB_MAXLIST, NP_SEED
 import pasam._messages as msg
-from pasam.lattice import ConditionPoint
-from pasam.pathgen import Trajectory
+import pasam.utils as utl
+from pasam.lattice import LatticeMap, ConditionPoint,\
+    Trajectory, TrajectoryPermissionFactory
 
 # Constants and Variables
-_NP_ORDER = settings.NP_ORDER
-_NP_SEED = 4541285
-_DIM_GANTRY = settings.DIM_GANTRY
-
 _rlib = reprlib.Repr()
-_rlib.maxlist = settings.RLIB_MAXLIST
-np.random.seed(settings.NP_SEED)
+_rlib.maxlist = RLIB_MAXLIST
+np.random.seed(NP_SEED)
+
+# Problematic Seeds
+# TODO fix this shit here
+np.random.seed(155819)
+# np.random.seed(98407703)
+# np.random.seed(138667415)
+
+# Test Random Seeds
+# SEED = np.random.randint(158521456)
+# print('Seed: ', SEED)
+# np.random.seed(SEED)
 
 
 class Sampler(abc.ABC):
     """Parent class for all sampling algorithms.
 
     Args:
-        prior_map (LatticeMap): Prior sampling map for trajectory points.
+        prior_map (LatticeMap): Prior sampling map.
 
     """
 
@@ -64,7 +73,7 @@ class Sampler(abc.ABC):
         return self.__repr__()
 
     @abc.abstractmethod
-    def __call__(self, conditions):
+    def __call__(self, conditions=None):
         """Start the sampling algorithm.
 
         Args:
@@ -80,19 +89,22 @@ class SamplerFactory:
     """
 
     @staticmethod
-    def make(prior_map, traj_type):
+    # TODO switch prior_map and traj_type
+    # TODO refactor traj_type into type_
+    def make(prior_map, traj_type, **kwargs):
         """Creates :class:`Sampler` objects.
 
         Args:
-            prior_map (LatticeMap): Computational lattice and it's prior map.
             traj_type (str): Trajectory type.
+            prior_map (LatticeMap): Prior sampling map.
+            kwargs (dict): Type specific arguments.
 
         Returns:
             Sampler: Sampling algorithm object.
         """
 
         if traj_type == 'GantryDominant2D':
-            return SamplerGantryDominant2D(prior_map)
+            return SamplerGantryDominant2D(prior_map, traj_type, **kwargs)
         else:
             raise ValueError(msg.err3000(traj_type))
 
@@ -104,63 +116,117 @@ class SamplerGantryDominant2D(Sampler):
     Attributes:
         ntrajectory (int): Length of trajectory.
     """
+    # TODO refactor _TRAJ_TYPE into _TYPE_
+    _TRAJ_TYPE = 'GantryDominant2D'
 
-    def __init__(self, prior_map):
-        super().__init__(prior_map)
-        self.ntrajectory = self._prior_map.lattice.nnodes_dim[_DIM_GANTRY]
+    # TODO refactor all of this class
 
-    def __call__(self, conditions):
+    def __call__(self, conditions=None):
         """Executes the sampling algorithm.
 
         Args:
-            conditions (list of Condition): Set of conditions.
+            conditions (list of Condition, optional): Set of conditions.
 
         Returns:
             Trajectory: Sampled trajectory
         """
-        trajectory = np.array([None for _ in range(self.ntrajectory)])
-        ind_to_do = np.array([True for _ in range(self.ntrajectory)])
+        # Check conditions
+        perm_map = self._permission_map_from_conditons(conditions)
+        # perm_map = self._condition_set_validity(perm_map)
 
-        self._fix_traj_points_cond(trajectory, ind_to_do, conditions)
-        self._fix_traj_points_smpl(trajectory, ind_to_do)
+        # Sample path
+        trajectory_points = self._sample_trajectory_points(perm_map)
+        return Trajectory(trajectory_points)
 
-        return Trajectory(trajectory)
+    def __init__(self, prior_map, traj_type, ratio=1):
+        super().__init__(prior_map)
+        # TODO refactor traj_type into type_
+        self._traj_type = traj_type
+        self._ratio = ratio
+        kwargs = {'traj_type': self._traj_type, 'ratio': self._ratio}
+        self._traj_perm = TrajectoryPermissionFactory().make(**kwargs)
 
-    def _fix_traj_points_cond(self, trajectory, ind_to_do, conditions):
+    def _sample_trajectory_points(self, perm_map):
+
         lattice = self._prior_map.lattice
-        for cond in conditions:
-            if isinstance(cond, ConditionPoint):
-                pos = lattice.indices_from_point(cond.components)[_DIM_GANTRY]
-                ind_to_do[pos] = False
-                trajectory[pos] = cond.components
+        ndim = lattice.ndim
+        ntraj = lattice.nnodes_dim[DIM_GANTRY]
+        traj_points = np.array([None for _ in range(ntraj)])
+        ind_to_do = np.array([True for _ in range(ntraj)], dtype='bool')
 
-    def _fix_traj_points_smpl(self, trajectory, ind_to_do):
-        perm_map = self._prior_map
-        ndim = perm_map.ndim
-        nnodes_dim = perm_map.lattice.nnodes_dim
-        nnodes_dim_red = tuple([n for dim, n in enumerate(nnodes_dim) if dim != _DIM_GANTRY])
-        positions = np.arange(len(ind_to_do))
+        gantry_ind = np.arange(len(ind_to_do))
+        rem_nodes = [n for i, n in enumerate(lattice.nodes)
+                     if i != DIM_GANTRY]
+        rem_nodes = utl.cartesian_product(*rem_nodes)
         while np.any(ind_to_do):
-            pos = np.random.choice(positions[ind_to_do])
-            ind_to_do[pos] = False
+            ind_gantry_pos = np.random.choice(gantry_ind[ind_to_do])
 
-            pos_slice = [slice(None) for _ in range(ndim)]
-            pos_slice[_DIM_GANTRY] = pos
-            map_slice = perm_map[tuple(pos_slice)]
+            prior_slice = self._prior_map.slice(DIM_GANTRY, ind_gantry_pos)
+            perm_slice = perm_map.slice(DIM_GANTRY, ind_gantry_pos)
 
+            import matplotlib.pyplot as plt
+            plt.imshow(np.reshape((self._prior_map * perm_map).map_vals, (180, 90),
+                                  order='F').transpose(), origin='lower')
+            plt.plot([ind_gantry_pos,]*2, [0, 89], 'r--')
+            plt.show()
 
-            distribution = map_slice.map_vals
-            try:
+            if np.sum(perm_slice.map_vals) >= 1:
+                distribution = (prior_slice * perm_slice).map_vals
+                try:
+                    distribution = distribution / np.sum(distribution)
+                except (ZeroDivisionError, FloatingPointError,
+                        RuntimeWarning, RuntimeError):
+                    raise ValueError('HERE WE SHOULD TAKE THE PERMITTED REGION WITHOUT'
+                                     'THE PRIOR DISTRIBUTION AND SAMPLE UNIFORMLY IN THERE')
                 distribution = distribution / np.sum(distribution)
-            except (ZeroDivisionError, FloatingPointError,
-                    RuntimeWarning, RuntimeError):
-                distribution = np.ones_like(distribution) / len(distribution)
-                warnings.warn(msg.warn3000)
+            else:
+                import matplotlib.pyplot as plt
+                plt.imshow(np.reshape((self._prior_map * perm_map).map_vals, (180, 90),
+                                      order='F').transpose(), origin='lower')
+                plt.show()
+                raise ValueError('TODO Error message for not possible settings '
+                                 '(because there is no connected trajectory possible anymore)')
 
-            # use a command like: (maybe put the slice outside of the while)
-            # use nnodes_dim_red of above
-            # slice_ind = [(i, j) for j in range(len(nodes_colli)) for i in range(len(nodes))]
-            # np.random.choice(slice_ind, p=distribution)
+            ind = np.random.choice(np.arange(len(distribution)),
+                                   p=distribution)
+            pos_slice = rem_nodes[ind]
 
+            traj_point = np.array([None,] * ndim)
+            traj_point[DIM_GANTRY] = lattice.nodes[DIM_GANTRY][ind_gantry_pos]
+            traj_point[[i for i in range(ndim) if i != DIM_GANTRY]] = pos_slice
 
-            trajectory[pos] = 1
+            traj_point = tuple(traj_point)
+            cond_point = ConditionPoint(traj_point)
+            perm_map *= cond_point.permission_map(lattice, self._traj_perm)
+
+            traj_points[ind_gantry_pos] = traj_point
+            ind_to_do[ind_gantry_pos] = False
+        return traj_points
+
+    def _condition_set_validity(self, perm_map):
+        # TODO check condition set -> we can use a technique similar as the one
+        #  for checking the condition map in
+        #  TrajectoryPermissionGantryDominant2D._perm_from_map but this time we
+        #  retain the graph and then check if there a combination of
+        #  ingoing/outgoing from left to right. BUT MAKE SURE TO REUSE CODE
+        graph = self._condition_set_graph(perm_map)
+        pass
+        # return valid_perm_map
+
+    def _condition_set_graph(self, perm_map):
+        pass
+
+    def _permission_map_from_conditons(self, conditions):
+        lattice = self._prior_map.lattice
+        traj_perm = self._traj_perm
+        if conditions:
+            maps = [c.permission_map(lattice, traj_perm) for c in conditions]
+            permission_map = functools.reduce(lambda a, b: a * b, maps)
+        else:
+            values = np.ones(lattice.nnodes, dtype='int')
+            permission_map = LatticeMap(lattice, values)
+        return permission_map
+
+    @property
+    def _kwargs(self):
+        return {'traj_type': self._traj_type, 'ratio': self._ratio}

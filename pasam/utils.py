@@ -29,13 +29,122 @@ from pathlib import Path
 import numpy as np
 # Local imports
 import pasam._messages as msg
-import pasam._settings as settings
-
-# Constants
-_NP_ORDER = settings.NP_ORDER
+from pasam._settings import NP_ORDER
 
 
 # Public methods
+def ams_val_map_to_bool_map(vals):
+    """Assigns `0` to ``True`` and `1` to ``False``.
+
+    By default, the AMS generates files where the permitted nodes have
+    values `0` and the blocked nodes have value `1`.
+    """
+    # Value intervals for permitted (True) and blocked (False) nodes
+    INTERVAL_TRUE  = (-0.1, 0.1)
+    INTERVAL_FALSE = ( 0.9, 1.1)
+
+    vals = np.asarray(vals).ravel(order=NP_ORDER)
+    map_vals = np.asarray(vals, dtype=bool)
+
+    ind_true = np.logical_and(vals > INTERVAL_TRUE[0], vals < INTERVAL_TRUE[1])
+    ind_false = np.logical_and(vals > INTERVAL_FALSE[0], vals < INTERVAL_FALSE[1])
+
+    # Check whether all values have been covered
+    if np.sum(np.logical_xor(ind_true, ind_false)) != len(map_vals):
+        ind_not_unique = np.logical_not( np.logical_xor(ind_true, ind_false) )
+        ind = np.where(ind_not_unique)[0]
+        raise ValueError(msg.err0001(vals[ind]))
+
+    # Tag nodes according to the permission
+    map_vals[ind_true] = True
+    map_vals[ind_false] = False
+
+    return map_vals
+
+
+def cartesian_product(*args, order='F'):
+    """Cartesian product for a set of containers.
+
+    Args:
+        args (array_like of array_like):
+        order (str {'C', 'F'}): 'F' for Fortran and 'C' for C-type ordering.
+
+    Returns:
+        list of tuples
+
+    Notes:
+        This function is equivalent to the function `itertools.product` but in
+        addiction let's the user choose the ordering (Fortran or C).
+
+        For an input with two lists::
+
+            args = [[a, b, c], [e, f]]
+
+        it produces a list of tuples such that::
+
+            [(a, e), (b, e), (c, e), (a, f), (b, f), (c, f)] (order='F')
+            [(a, e), (a, f), (b, e), (b, f), (c, e), (c, f)] (order='C').
+    """
+    pools = map(list, args)
+    result = [[]]
+
+    if order == 'F':
+        for pool in pools:
+            result = [x + [y] for y in pool for x in result]
+    elif order == 'C':
+        for pool in pools:
+            result = [x + [y] for x in result for y in pool]
+    else:
+        raise ValueError(msg.err0002(order))
+    return [tuple(prod) for prod in result]
+
+
+# TODO unit test utl.conical_opening_indicator
+def conical_opening_indicator(center, distance, alpha, points):
+    """Indicates whether the points are within (True) or outside (False) of the
+    conical opening.
+
+    Notes:
+        An example of a conical opening with angle `alpha` is as follows::
+
+                      center
+                         *
+                        | \
+                       |   \
+                      |     \
+                     |       \
+                    |         \
+                    -----------
+                  *----*----*----*  points
+
+        where `distance` is the height and two of four points. The function
+        would return `[False, True, True, False]` because the two middle
+        points lie inside the conical opening.
+
+    Args:
+        center (float):
+        distance (float): Distance from the center.
+        points (ndarray, shape=(n,):
+
+    Returns:
+        array-like, shape=(n,): Indicator for points inside (True) and outside
+            (False) of the conical opening.
+    """
+    v_range = abs(distance) * np.tan(alpha/2)
+    v_min = center - v_range
+    v_max = center + v_range
+
+    # Make standard less_equal and bigger_equal test
+    points = np.asarray(points)
+    ind = np.logical_and(points >= v_min, points <= v_max)
+
+    # Correct numerical inaccuracies (for very close points)
+    ind = np.logical_or(ind, np.isclose(points, v_min))
+    ind = np.logical_or(ind, np.isclose(points, v_max))
+
+    return ind
+
+
 def findall_num_in_str(s):
     """Extracts all numbers in a string.
 
@@ -61,30 +170,11 @@ def isincreasing(vals, strict=True):
     Returns:
         bool
     """
-    vals = np.asarray(vals).ravel(order=_NP_ORDER)
+    vals = np.asarray(vals).ravel(order=NP_ORDER)
     if strict:
         return np.all(vals[:-1] < vals[1:])
     else:
         return np.all(vals[:-1] <= vals[1:])
-
-
-def permission_array_from_condition_file(file):
-    """Reads a permission map from a given .txt file.
-
-    Args:
-        file (str or pathlib.Path): File or filename.
-
-    Returns:
-        ndarray: Boolean array for permitted (True) and blocked (False) nodes.
-
-    """
-    _, _, vals = readfile_latticemap(file)
-
-    # !!! Values are inverted in the ams map !!!
-    # There, `0` means permitted and `1` blocked
-    map_vals = _ams_val_map_to_bool_map(vals)
-
-    return map_vals
 
 
 def readlines_(file, remove_blank_lines=False):
@@ -112,13 +202,16 @@ def readlines_(file, remove_blank_lines=False):
     return lines
 
 
+# TODO change `utl.readfile_latticemap` as follows
+#   - remove the return of the nnodes_dim (this is in nodes)
+#   - make it possible to return the latticemap or the nodes + values
 def readfile_latticemap(file):
     """Reads a latticemap file.
 
     The structure of the latticemap file is as follows::
 
             ----------------------------------------
-            | <nnode_dim>                          |
+            | <nnodes_dim>                         |
             | <nodes_x>                            |
             | <nodes_y>                            |
             | (<nodes_z>)                          |
@@ -142,6 +235,7 @@ def readfile_latticemap(file):
         nodes (list): The nodes given in the file.
         map_vals (ndarray, shape=(n,)): Map values given in the file.
     """
+    # TODO rename map_vals into values
     lines = readlines_(file, remove_blank_lines=True)
 
     # Number of nodes per dimension (defined in lines[0])
@@ -176,35 +270,6 @@ def write_trajectory_to_txt(fname, points):
 
 
 # Private Methods
-def _ams_val_map_to_bool_map(vals):
-    """Assigns `0` to ``True`` and `1` to ``False``.
-
-    By default, the AMS generates files where the permitted nodes have
-    values `0` and the blocked nodes have value `1`.
-    """
-    # Value intervals for permitted (True) and blocked (False) nodes
-    INTERVAL_TRUE  = (-0.1, 0.1)
-    INTERVAL_FALSE = ( 0.9, 1.1)
-
-    vals = np.asarray(vals).ravel(order=_NP_ORDER)
-    map_vals = np.asarray(vals, dtype=bool)
-
-    ind_true = np.logical_and(vals > INTERVAL_TRUE[0], vals < INTERVAL_TRUE[1])
-    ind_false = np.logical_and(vals > INTERVAL_FALSE[0], vals < INTERVAL_FALSE[1])
-
-    # Check whether all values have been covered
-    if np.sum(np.logical_xor(ind_true, ind_false)) != len(map_vals):
-        ind_not_unique = np.logical_not( np.logical_xor(ind_true, ind_false) )
-        ind = np.where(ind_not_unique)[0]
-        raise ValueError(msg.err0001(vals[ind]))
-
-    # Tag nodes according to the permission
-    map_vals[ind_true] = True
-    map_vals[ind_false] = False
-
-    return map_vals
-
-
 def _ams_write_trajectory_to_txt(fname, points):
     """Write a trajectory to a txt file according to the AMS guidelines.
     """
