@@ -2,15 +2,15 @@
 """Collection of error and warning messages.
 """
 
-# ------------------------------- 0XXX utils.py -------------------------------
+# -------------------------------- 0XXX utils ---------------------------------
 # Warnings
 
 
 # Errors
-def err0000(ndim, type_):
+def err0000(type_):
     return f"ERR0000 " \
            f"No :class:`_TrajectoryPermission` implementation for " \
-           f"dim={ndim} and type='{type_}'"
+           f"trajectory type='{type_}'"
 
 
 def err0001(vals):
@@ -19,7 +19,12 @@ def err0001(vals):
            f"or `False`"
 
 
-# ------------------------------ 1XXX lattice.py ------------------------------
+def err0002(order):
+    return f"ERR0002 " \
+           f"Unknown cartesian product ordering '{order}'"
+
+
+# ------------------------------- 1XXX lattice --------------------------------
 # Warnings
 
 
@@ -34,8 +39,9 @@ def err1001(nodes):
            f"Nodes {nodes} are not strictly increasing"
 
 
-err1002 = f"ERR1002 " \
-          f"Unsupported operation `+` for different :class:`Lattice` objects"
+def err1002(op):
+    return f"ERR1002 " \
+           f"Unsupported operation `{op}` for different lattice objects"
 
 
 def err1003(nnodes, nval):
@@ -50,6 +56,29 @@ def err1004(obj, key):
            f"for '{obj}'."
 
 
-if __name__ == '__main__':
-    print(err0000(2, 'GantryDominant'))
-    print(err1001([1, 2, 4, 3]))
+def err1005(ndim, ncomp):
+    return f"ERR1005 " \
+           f"Point dimension (={ncomp}) does not match lattice dimension " \
+           f"(={ndim})."
+
+
+# ------------------------------ 2XXX trajectory ------------------------------
+# Warnings
+
+
+# Errors
+def err2000(shape, dim):
+    return f'Shape of linear indices array {shape} ' \
+           f'does not match dimensions {dim}.'
+
+
+# ------------------------------ 3XXX sampling --------------------------------
+# Warnings
+warn3000 = "WARNING 3000 The sum of the sliced map values is equal to 0."
+
+
+# Errors
+def err3000(type_):
+    return f"ERR3000 " \
+           f"No :class:`Sampler` implementation for " \
+           f"trajectory type='{type_}'"
