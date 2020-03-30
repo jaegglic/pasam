@@ -23,7 +23,8 @@ import numpy as np
 # Local imports
 from pasam._paths import PATH_TESTFILES
 from pasam.lattice import (Lattice, LatticeMap,
-                           Condition, ConditionFile, ConditionPoint)
+                           Condition, ConditionFile, ConditionPoint,
+                           TrajectoryPermissionFactory)
 
 
 class TestCondition(unittest.TestCase):
@@ -161,7 +162,8 @@ class TestCondition(unittest.TestCase):
             'traj_type':    traj_type,
             'ratio':        1.0
         }
-        cond_map = cond_point.permission_map(lattice, **kwargs)
+        traj_perm = TrajectoryPermissionFactory().make(**kwargs)
+        cond_map = cond_point.permission_map(lattice, traj_perm)
         map_vals_true = np.array([
             1, 0, 0, 0, 1,
             1, 1, 1, 1, 1,
@@ -170,7 +172,7 @@ class TestCondition(unittest.TestCase):
         self.assertEqual(cond_map, LatticeMap(lattice, map_vals_true))
 
         cond_point = ConditionPoint((-2, -2))
-        cond_map = cond_point.permission_map(lattice, **kwargs)
+        cond_map = cond_point.permission_map(lattice, traj_perm)
         map_vals_true = np.array([
             1, 1, 1, 1, 1,
             0, 0, 1, 1, 1,
@@ -183,7 +185,8 @@ class TestCondition(unittest.TestCase):
             'traj_type':    traj_type,
             'ratio':        2.0
         }
-        cond_map = cond_point.permission_map(lattice, **kwargs)
+        traj_perm = TrajectoryPermissionFactory().make(**kwargs)
+        cond_map = cond_point.permission_map(lattice, traj_perm)
         map_vals_true = np.array([
             1, 1, 0, 1, 1,
             1, 1, 1, 1, 1,
@@ -192,7 +195,7 @@ class TestCondition(unittest.TestCase):
         self.assertEqual(cond_map, LatticeMap(lattice, map_vals_true))
 
         cond_point = ConditionPoint((2, -2))
-        cond_map = cond_point.permission_map(lattice, **kwargs)
+        cond_map = cond_point.permission_map(lattice, traj_perm)
         map_vals_true = np.array([
             1, 1, 1, 1, 1,
             1, 1, 1, 1, 0,
