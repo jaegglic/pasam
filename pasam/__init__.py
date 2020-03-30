@@ -13,3 +13,5 @@ package is defined by the modules
 from pasam.lattice import *
 from pasam.sampling import *
 from pasam.utils import *
+
+from pasam._paths import PATH_EXAMPLES

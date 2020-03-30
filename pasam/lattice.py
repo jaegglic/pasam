@@ -513,7 +513,7 @@ class TrajectoryPermissionGantryDominant2D(TrajectoryPermission):
             raise ValueError(msg.err2000(shape, dim))
 
         # Iteratively go through the nodes and generate adjacency graph
-        alpha = 2 * np.arctan(self._ratio)  # The opening is symmetric
+        ratio = 2 * self._ratio   # The opening is symmetric
         pts = nodes_table
         graph = np.zeros((lattice.nnodes,)*2, dtype=bool)
         for igan, node_g in enumerate(nodes_gantry[:-1]):
@@ -522,16 +522,20 @@ class TrajectoryPermissionGantryDominant2D(TrajectoryPermission):
             dist = abs(node_g - nodes_gantry[igan+1])
             for itab, node_t in enumerate(nodes_table):
                 cntr = node_t
-                ind = utl.conical_opening_indicator(cntr, dist, alpha, pts)
-                graph[lin_ind_arr[igan, itab], lin_ind_arr[igan+1, ind]] = True
+                is_allowed = utl.is_within_conical_opening(cntr, dist, ratio, pts)
+
+                from_node = lin_ind_arr[igan, itab]
+                to_nodes = lin_ind_arr[igan+1, is_allowed]
+                graph[from_node, to_nodes] = True
 
         return graph
 
     def permission_from_map(self, restriction):
+        lattice = restriction.lattice
         graph = self.adjacency_graph(restriction.lattice)
-        values_min = restriction.map_vals
+        values = restriction.map_vals
 
-        values_ext = self._perm_from_map(graph, values_min)
+        values_ext = self._perm_from_map(lattice, graph, values)
         return LatticeMap(restriction.lattice, values_ext)
 
     def permission_from_point(self, lattice, components):
@@ -551,21 +555,21 @@ class TrajectoryPermissionGantryDominant2D(TrajectoryPermission):
         if DIM_GANTRY > DIM_TABLE:
             lin_ind_arr = lin_ind_arr.transpose()
 
-        return lin_ind_arr
+        return np.asarray(lin_ind_arr, dtype='int32')
 
-    def _perm_from_map(self, graph, values):
+    def _perm_from_map(self, lattice, graph, values):
         """Returns a permission array respecting graph connectivity and
         restrictions from a set of values."""
         values = np.array(values, dtype=bool, copy=True).ravel(order=NP_ORDER)
         graph = np.array(graph, copy=True)
-        nnodes = len(values)
 
         # Initialize set of nodes to be checked
         inodes_control = set(np.where(np.logical_not(values))[0])
 
         # Boundary nodes
-        no_outgoing = [i for i in range(nnodes) if not any(graph[i, :])]
-        no_incoming = [i for i in range(nnodes) if not any(graph[:, i])]
+        lin_ind_arr = self._lin_ind_arr(lattice.nnodes_dim)
+        no_outgoing = lin_ind_arr[-1, :]
+        no_incoming = lin_ind_arr[0, :]
 
         # Loop until there is no potential issue anymore
         while len(inodes_control) > 0:
@@ -600,14 +604,14 @@ class TrajectoryPermissionGantryDominant2D(TrajectoryPermission):
 
         # Conical opening for the permitted area of the trajectory
         cntr = components[DIM_TABLE]
-        alpha = 2 * np.arctan(self._ratio)  # The opening is symmetric
+        ratio = 2 * self._ratio  # The opening is symmetric
         pts = nodes[DIM_TABLE]
 
         # Loop in gantry direction through the lattice
         for inode, node in enumerate(nodes[DIM_GANTRY]):
             dist = abs(node - components[DIM_GANTRY])
-            ind = utl.conical_opening_indicator(cntr, dist, alpha, pts)
-            map_vals[inode, ind] = True
+            is_allowed = utl.is_within_conical_opening(cntr, dist, ratio, pts)
+            map_vals[inode, is_allowed] = True
 
         # Correct dimension ordering if needed
         if DIM_GANTRY > DIM_TABLE:

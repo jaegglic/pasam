@@ -164,11 +164,11 @@ class SamplerGantryDominant2D(Sampler):
             prior_slice = self._prior_map.slice(DIM_GANTRY, ind_gantry_pos)
             perm_slice = perm_map.slice(DIM_GANTRY, ind_gantry_pos)
 
-            import matplotlib.pyplot as plt
-            plt.imshow(np.reshape((self._prior_map * perm_map).map_vals, (180, 90),
-                                  order='F').transpose(), origin='lower')
-            plt.plot([ind_gantry_pos,]*2, [0, 89], 'r--')
-            plt.show()
+            # import matplotlib.pyplot as plt
+            # plt.imshow(np.reshape((self._prior_map * perm_map).map_vals, (180, 90),
+            #                       order='F').transpose(), origin='lower')
+            # plt.plot([ind_gantry_pos,]*2, [0, 89], 'r--')
+            # plt.show()
 
             if np.sum(perm_slice.map_vals) >= 1:
                 distribution = (prior_slice * perm_slice).map_vals

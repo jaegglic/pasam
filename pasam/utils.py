@@ -29,7 +29,7 @@ from pathlib import Path
 import numpy as np
 # Local imports
 import pasam._messages as msg
-from pasam._settings import NP_ORDER
+from pasam._settings import NP_ORDER, NP_ATOL, NP_RTOL
 
 
 # Public methods
@@ -100,47 +100,57 @@ def cartesian_product(*args, order='F'):
 
 
 # TODO unit test utl.conical_opening_indicator
-def conical_opening_indicator(center, distance, alpha, points):
+def is_within_conical_opening(center, distance, ratio, points):
     """Indicates whether the points are within (True) or outside (False) of the
     conical opening.
 
     Notes:
-        An example of a conical opening with angle `alpha` is as follows::
 
-                      center
-                         *
-                        | \
-                       |   \
-                      |     \
-                     |       \
-                    |         \
-                    -----------
-                  *----*----*----*  points
+        An example of a conical (symmetric) opening::
 
-        where `distance` is the height and two of four points. The function
-        would return `[False, True, True, False]` because the two middle
-        points lie inside the conical opening.
+                      `center`
+                         *                  -----
+                        | \                     |
+                       |   \                    |
+                      |     \               `distance`
+                     |       \                  |
+                    |         \                 |
+                   |-----------\            -----
+
+                   |------------|           `distance * ratio`
+
+             *---------*----*--------*      `points`
+
+        where `distance` is the height of the triangle, the opening is the
+        product `distance * ratio` and `points` is a set of real values. For
+        the given example above, two out of four points are lying within the
+        conical (symmetric) opening so that the function would return
+        `[False, True, True, False]`.
 
     Args:
-        center (float):
+        center (float): Center of the cone.
         distance (float): Distance from the center.
-        points (ndarray, shape=(n,):
+        ratio (float): Ratio of the opening by distance.
+        points (ndarray, shape=(n,)): Set of real values.
 
     Returns:
         array-like, shape=(n,): Indicator for points inside (True) and outside
             (False) of the conical opening.
     """
-    v_range = abs(distance) * np.tan(alpha/2)
+    # The opening is supposed to by symmetric around the center
+    v_range = distance * ratio / 2
     v_min = center - v_range
     v_max = center + v_range
+
+    # Accept numerical inaccuracies; the below method is equivalent to
+    # ind = np.logical_or(ind, np.isclose(points, v_min, atol=NP_ATOL, rtol=NP_RTOL))
+    # ind = np.logical_or(ind, np.isclose(points, v_max, atol=NP_ATOL, rtol=NP_RTOL))
+    v_min -= NP_ATOL + NP_RTOL*abs(v_min)
+    v_max += NP_ATOL + NP_RTOL*abs(v_max)
 
     # Make standard less_equal and bigger_equal test
     points = np.asarray(points)
     ind = np.logical_and(points >= v_min, points <= v_max)
-
-    # Correct numerical inaccuracies (for very close points)
-    ind = np.logical_or(ind, np.isclose(points, v_min))
-    ind = np.logical_or(ind, np.isclose(points, v_max))
 
     return ind
 

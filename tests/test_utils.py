@@ -231,41 +231,39 @@ class TestUtils(unittest.TestCase):
         ]
         self.assertEqual(tensor_dot_true, tensor_dot_test)
 
-    def test_utils_conical_opening_indicator(self):
+    def test_utils_is_within_conical_opening(self):
         cntr = -1.5
         dist = 2.75
-        fact = 1
-        alpha = np.pi / 2
+        ratio = 2
         points = [
             -4.25 * 1.000001,
             -4.25 * 1.001,
-            cntr-fact*dist,
+            cntr-dist*ratio/2,
             cntr,
-            cntr+fact*dist,
+            cntr+dist*ratio/2,
             1.25 * 1.001,
             1.25 * 1.000001,
         ]
         ind_true = np.array([True, False, True, True, True, False, True])
 
-        ind_test = utl.conical_opening_indicator(cntr, dist, alpha, points)
+        ind_test = utl.is_within_conical_opening(cntr, dist, ratio, points)
         self.assertTrue(all(ind_true == ind_test))
 
         cntr = 10
         dist = 5
-        fact = 0.5
-        alpha = 2*np.arctan(fact)
+        ratio = 1
         points = [
             7.5 * 0.999999,
             7.5 * 0.999,
-            cntr-fact*dist,
+            cntr-dist*ratio/2,
             cntr,
-            cntr+fact*dist,
+            cntr+dist*ratio/2,
             12.5 * 1.001,
             12.5 * 1.000001,
         ]
         ind_true = np.array([True, False, True, True, True, False, True])
 
-        ind_test = utl.conical_opening_indicator(cntr, dist, alpha, points)
+        ind_test = utl.is_within_conical_opening(cntr, dist, ratio, points)
         self.assertTrue(all(ind_true == ind_test))
 
 
