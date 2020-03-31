@@ -23,7 +23,7 @@ import numpy as np
 # Local imports
 import pasam._settings as settings
 from pasam._paths import PATH_TESTFILES
-from pasam.lattice import Lattice, LatticeMap
+from pasam.lattice import Lattice, LatticeMap, readfile_latticemap
 
 # Constants and Variables
 _NP_ORDER = settings.NP_ORDER
@@ -418,6 +418,23 @@ class TestLattice(unittest.TestCase):
         self.assertEqual(latticemap_slice_0, latticemap.slice(0, 1))
         self.assertEqual(latticemap_slice_1, latticemap.slice(1, 3))
 
+    def test_readfile_latticemap_2D(self):
+        nodes = [[-1.5, 1.5, 5, 8, 9], [1, 2, 3, 4, 5, 6]]
+        values = np.asarray([
+            [0.5, 0.5, 0.5, 0.5, 0.5],
+            [0.6, 0.6, 0.6, 0.6, 0.6],
+            [0.7, 0.7, 0.7, 0.7, 0.7],
+            [0.7, 0.7, 0.7, 0.7, 0.7],
+            [0.6, 0.6, 0.6, 0.6, 0.6],
+            [0.5, 0.5, 0.5, 0.5, 0.5],
+        ]).ravel(order='C')
+        latticemap_true = LatticeMap(nodes, values)
+
+        file = PATH_TESTFILES + 'latticemap2d_simple.txt'
+        latticemap_test = readfile_latticemap(file)
+
+        self.assertEqual(latticemap_true, latticemap_test)
+
     # Tests associated to LatticeMap3D
     def test_LatticeMap3D_gen(self):
         lattice = Lattice(self.nodes3D)
@@ -574,6 +591,23 @@ class TestLattice(unittest.TestCase):
         latticemap_test = LatticeMap.from_txt(file)
 
         self.assertTrue(isinstance(latticemap_test, LatticeMap))
+        self.assertEqual(latticemap_true, latticemap_test)
+
+    def test_utils_readfile_latticemap3D(self):
+        nodes = [[-1.5, 1.5], [5, 8, 9], [-2, 3]]
+        values = np.asarray([
+            [0.5, 0.5],
+            [0.8, 0.8],
+            [0.1, 0.1],
+            [0.6, 0.6],
+            [0.9, 0.9],
+            [0.2, 0.2],
+        ]).ravel(order='C')
+        latticemap_true = LatticeMap(nodes, values)
+
+        file = PATH_TESTFILES + 'latticemap3d_simple.txt'
+        latticemap_test = readfile_latticemap(file)
+
         self.assertEqual(latticemap_true, latticemap_test)
 
 

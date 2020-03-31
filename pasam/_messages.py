@@ -29,11 +29,6 @@ def err0002(order):
 
 
 # Errors
-def err1000(file, lattice):
-    return f"ERR1000 " \
-           f"Inconsistent lattice in file '{file}' comparing to {lattice}"
-
-
 def err1001(nodes):
     return f"ERR1001 " \
            f"Nodes {nodes} are not strictly increasing"
@@ -67,18 +62,29 @@ def err1005(ndim, ncomp):
 
 
 # Errors
-def err2000(shape, dim):
-    return f'Shape of linear indices array {shape} ' \
-           f'does not match dimensions {dim}.'
 
 
 # ------------------------------ 3XXX sampling --------------------------------
 # Warnings
-warn3000 = "WARNING 3000 The sum of the sliced map values is equal to 0."
+warn3000 = "WARN3000 The sum of the sliced map values is equal to 0."
 
 
 # Errors
-def err3000(type_):
-    return f"ERR3000 " \
-           f"No :class:`Sampler` implementation for " \
-           f"trajectory type='{type_}'"
+def err3000(lat1, lat2):
+    return f'ERR3000 {lat1} and {lat2} do not match.'
+
+
+def err3001(file, lattice):
+    return f"ERR3001 " \
+           f"Inconsistent lattice in file '{file}' comparing to {lattice}"
+
+
+def err3002(shape, dim):
+    return f'ERR3002 ' \
+           f'Shape of linear indices array {shape} ' \
+           f'does not match dimensions {dim}.'
+
+
+err3003 = f'ERR3003 ' \
+          f'The ratio is too small; consider adapting the ratio or ' \
+          f'spacing of the grid nodes (c.f. docstring of `_check_ratio`).'

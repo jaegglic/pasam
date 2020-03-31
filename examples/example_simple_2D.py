@@ -37,30 +37,32 @@ import matplotlib.pylab as plt
 # Local imports
 import pasam as ps
 
-# Computational Lattice and Prior Distribution
-file_prior_energy = ps.PATH_EXAMPLES + 'example_prior_energy_2D.txt'
-_, nodes, prior_energy_values = ps.readfile_latticemap(file_prior_energy)
-prior_map = ps.LatticeMap(nodes, np.exp(-prior_energy_values))
 
-# Prior Conditioning
-file_prior_cond = ps.PATH_EXAMPLES + 'example_condition_2D.txt'
-conditions = [ps.ConditionFile(file_prior_cond)]
+# Computational lattice
+nodes = [np.arange(-179, 180, 2), np.arange(-89, 90, 2)]
+lattice = ps.Lattice(nodes)
 
-# Sampler Definitions and Specifications
-sampler_settings = {
-    'traj_type': 'GantryDominant2D',
-    'ratio': 2.0,
-}
-sampler = ps.SamplerFactory.make(prior_map, **sampler_settings)
+# Sampler
+ratio = 2.0
+sampler = ps.GantryDominant2D(lattice=lattice, ratio=ratio)
 
-# Sample Trajectory
-trajectory = sampler(conditions)
+# Set prior probability
+file_energy = ps.PATH_EXAMPLES + 'example_prior_energy_2D.txt'
+prior_energy = ps.readfile_latticemap(file_energy)
+sampler.set_prior_prob(prior_energy, energy=True)
 
-# Plot the Result
-lattice = prior_map.lattice
-permission_map = conditions[0].permission_map(lattice)
-values = np.reshape((permission_map * prior_map).map_vals, lattice.nnodes_dim, order='F')
+# Set and check validity of prior conditioning
+file_cond = ps.PATH_EXAMPLES + 'example_condition_2D.txt'
+sampler.set_prior_cond([file_cond])
 
+
+# # Sample Trajectory
+# trajectory = sampler(inspect=False)
+#
+# # Plot the Result
+# map_ = sampler._prior_cond * sampler._prior_prob
+# values = np.reshape(map_.map_vals, lattice.nnodes_dim, order='F')
+#
 # _, ax = plt.subplots()
 # min_x, max_x = nodes[0][0], nodes[0][-1]
 # min_y, max_y = nodes[1][0], nodes[1][-1]

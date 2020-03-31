@@ -3,12 +3,11 @@
 
 Generic methods
 ---------------
-    - :func:`findall_num_in_str`: Extracts all numbers from a string.
-    - :func:`isincreasing`: Checks if a sequence of values increases.
-    - :func:`permission_map_from_condition_file`: Permission map from file.
-    - :func:`permission_map_from_condition_point`: Permission map from point.
-    - :func:`readfile_latticemap`: Reads a latticemap file.
-    - :func:`readlines_`: Reads txt file (possibility to remove empty lines).
+    - :meth:`findall_num_in_str`: Extracts all numbers from a string.
+    - :meth:`isincreasing`: Checks if a sequence of values increases.
+    - :meth:`permission_map_from_condition_file`: Permission map from file.
+    - :meth:`permission_map_from_condition_point`: Permission map from point.
+    - :meth:`readlines_`: Reads txt file (possibility to remove empty lines).
 """
 
 # -------------------------------------------------------------------------
@@ -100,7 +99,7 @@ def cartesian_product(*args, order='F'):
 
 
 # TODO unit test utl.conical_opening_indicator
-def is_within_conical_opening(center, distance, ratio, points):
+def within_conical_opening(center, distance, ratio, points):
     """Indicates whether the points are within (True) or outside (False) of the
     conical opening.
 
@@ -212,83 +211,7 @@ def readlines_(file, remove_blank_lines=False):
     return lines
 
 
-# TODO change `utl.readfile_latticemap` as follows
-#   - remove the return of the nnodes_dim (this is in nodes)
-#   - make it possible to return the latticemap or the nodes + values
-def readfile_latticemap(file):
-    """Reads a latticemap file.
-
-    The structure of the latticemap file is as follows::
-
-            ----------------------------------------
-            | <nnodes_dim>                         |
-            | <nodes_x>                            |
-            | <nodes_y>                            |
-            | (<nodes_z>)                          |
-            | map_vals(x=0,...,n-1; y=0, (z=0))    |
-            | map_vals(x=0,...,n-1; y=1, (z=0))    |
-            | ...                                  |
-            | map_vals(x=0,...,n-1; y=m-1, (z=0))  |
-            | map_vals(x=0,...,n-1; y=0, (z=1))    |
-            | ...                                  |
-            | map_vals(x=0,...,n-1; y=0, (z=r-1))  |
-            ----------------------------------------
-
-    In the case of two-dimensional maps, the quantities in parentheses are
-    omitted.
-
-    Args:
-        file (str or pathlib.Path): File or filename.
-
-    Returns:
-        nnodes_dim (tuple): The number of nodes per dimension
-        nodes (list): The nodes given in the file.
-        map_vals (ndarray, shape=(n,)): Map values given in the file.
-    """
-    # TODO rename map_vals into values
-    lines = readlines_(file, remove_blank_lines=True)
-
-    # Number of nodes per dimension (defined in lines[0])
-    nnodes_dim = findall_num_in_str(lines[0])
-    ndim = len(nnodes_dim)
-
-    # Definition of the lattice (defined in lines[1:ndim+1])
-    lines_nodes, lines_map_vals = lines[1:ndim + 1], lines[ndim + 1:]
-    nodes = [findall_num_in_str(line) for line in lines_nodes]
-
-    # Definition of the map_vals (defined in lines[ndim+1:])
-    map_vals = [findall_num_in_str(line) for line in lines_map_vals]
-
-    # Flatten the list of values
-    map_vals = np.asarray([val for vals in map_vals for val in vals])
-
-    return nnodes_dim, nodes, map_vals
-
-
-def write_trajectory_to_txt(fname, points):
-    """Writes the trajectory to a text file.
-
-    Args:
-        fname (file, str, or pathlib.Path): File, filename, or generator to
-            write.
-        points (list): Sequence of trajectory points.
-
-    Returns:
-        None
-    """
-    _ams_write_trajectory_to_txt(fname, points)
-
-
 # Private Methods
-def _ams_write_trajectory_to_txt(fname, points):
-    """Write a trajectory to a txt file according to the AMS guidelines.
-    """
-    with open(fname, 'w+') as tfile:
-        tfile.write(f'{len(points)}\n')
-        for pt in points:
-            tfile.write('\t'.join([f'{p}' for p in pt]) + '\n')
-
-
 def _isblank(s):
     """Check whether a string only contains whitespace characters.
     """

@@ -14,6 +14,10 @@ Classes
     - :class:`TrajectoryPermissionFactory`: Factory for defining trajectory
         permission
 
+Methods
+-------
+    - :meth:`readfile_latticemap`: Reads a lattice map text file.
+
 """
 
 # -------------------------------------------------------------------------
@@ -43,99 +47,120 @@ _rlib = reprlib.Repr()
 _rlib.maxlist = RLIB_MAXLIST
 
 
-# Condition Objects
-class Condition(abc.ABC):
-    """`Condition` defines an abstract parent class for restrictions in the
-    path sampling.
-
-    Notes:
-        Any sub-class of `Condition` must provide an implementation of
-
-            - :meth:`permission_map`
-    """
-
-    @abc.abstractmethod
-    def permission_map(self, lattice, traj_perm):
-        """Produces a permission map with permitted (``True``) and blocked
-        (``False``) lattice nodes.
-
-        Args:
-            lattice (Lattice): Object defining the computational lattice.
-            traj_perm (TrajectoryPermission): Defines a trajectory permission
-               object for generating the permission map.
-
-        Returns:
-            LatticeMap: Lattice map issued from the condition.
-        """
-
-
-class ConditionFile(Condition):
-    """`ConditionFile` defines a condition from a .txt file.
-
-    Args:
-        file (str or pathlib.Path): File or filename.
-
-    Attributes:
-        file (str or pathlib.Path): File or filename.
-    """
-
-    def __init__(self, file):
-        self.file = file
-
-    def __repr__(self):
-        cls_name = type(self).__name__
-        return f'{cls_name}(file={self.file})'
-
-    def __str__(self):
-        return self.__repr__()
-
-    # Definition of the abstract method in `Condition`
-    def permission_map(self, lattice, traj_perm=None):
-        _, _, vals = utl.readfile_latticemap(self.file)
-        values = utl.ams_val_map_to_bool_map(vals)  # !! Values are inverted !!
-
-        latticemap = LatticeMap(lattice, values)
-        # TODO this is very dirty giving a default value for checking or not
-        #  the suitability of the map is veeeeery bad
-        if traj_perm:
-            latticemap = traj_perm.permission_from_map(latticemap)
-        return latticemap
-
-
-class ConditionPoint(Condition):
-    """`ConditionPoint` defines a condition point in a lattice grid.
-
-    Args:
-        components (array_like, shape=(n,)): Coordinate components.
-
-    Attributes:
-        components (ndarray, shape=(n,)): Coordinate components.
-    """
-
-    def __eq__(self, other):
-        if isinstance(other, ConditionPoint):
-            return np.all(self.components == other.components)
-        elif isinstance(other, tuple) or isinstance(other, list):
-            return np.all(self.components == np.asarray(other))
-        return False
-
-    def __init__(self, components):
-        self.components = np.asarray(components)
-
-    def __len__(self):
-        return len(self.components)
-
-    def __repr__(self):
-        cls_name = type(self).__name__
-        components_repr = _rlib.repr(self.components)
-        return f'{cls_name}(components={components_repr})'
-
-    def __str__(self):
-        return self.__repr__()
-
-    # Definition of the abstract method in `Condition`
-    def permission_map(self, lattice, traj_perm):
-        return traj_perm.permission_from_point(lattice, self.components)
+# # Condition Objects
+# class Condition(abc.ABC):
+#     """`Condition` defines an abstract parent class for restrictions in the
+#     path sampling.
+#
+#     Notes:
+#         Any sub-class of `Condition` must provide an implementation of
+#
+#             - :meth:`permission_map`
+#     """
+#
+#     @abc.abstractmethod
+#     def permission(self, lattice, movement):
+#         """Produces a permission map with permitted (``True``) and blocked
+#         (``False``) lattice nodes.
+#
+#         Args:
+#             lattice (Lattice): Object defining the computational lattice.
+#             movement (Movement): Traje
+#
+#         Returns:
+#             LatticeMap: Lattice map issued from the condition.
+#         """
+#
+#
+# class ConditionFactory:
+#     """`ConditionFactory` produces instances of :class:`Condition`.
+#     """
+#
+#     @staticmethod
+#     def make(condition):
+#         """Creates `Condition` objects.
+#
+#         Args:
+#             condition (str or array_like): Object defining a conditioning.
+#
+#         Returns:
+#             Condition: Conditioning object.
+#         """
+#         if isinstance(condition, str):
+#             return ConditionFile(condition)
+#         else:
+#             condition = np.asarray(condition)
+#             return ConditionPoint(condition)
+#
+#
+# class ConditionFile(Condition):
+#     """`ConditionFile` defines a condition from a .txt file.
+#
+#     Args:
+#         file (str or pathlib.Path): File or filename.
+#
+#     Attributes:
+#         file (str or pathlib.Path): File or filename.
+#     """
+#
+#     def __init__(self, file):
+#         self.file = file
+#
+#     def __repr__(self):
+#         cls_name = type(self).__name__
+#         return f'{cls_name}(file={self.file})'
+#
+#     def __str__(self):
+#         return self.__repr__()
+#
+#     # Definition of the abstract method in `Condition`
+#     def permission(self, lattice, movement):
+#         nodes, vals = readfile_nodes_values(self.file)
+#         values = utl.ams_val_map_to_bool_map(vals)  # !! Values are inverted !!
+#
+#         if Lattice(nodes) != lattice:
+#             raise ValueError(msg.err1000(self.file, lattice))
+#
+#         cond = LatticeMap(nodes, values)
+#         cond = movement.permission_from_map(cond)
+#
+#         return cond
+#
+#
+# class ConditionPoint(Condition):
+#     """`ConditionPoint` defines a condition point in a lattice grid.
+#
+#     Args:
+#         components (array_like, shape=(n,)): Coordinate components.
+#
+#     Attributes:
+#         components (ndarray, shape=(n,)): Coordinate components.
+#     """
+#
+#     def __eq__(self, other):
+#         if isinstance(other, ConditionPoint):
+#             return np.all(self.components == other.components)
+#         elif isinstance(other, tuple) or isinstance(other, list):
+#             return np.all(self.components == np.asarray(other))
+#         return False
+#
+#     def __init__(self, components):
+#         self.components = np.asarray(components)
+#
+#     def __len__(self):
+#         return len(self.components)
+#
+#     def __repr__(self):
+#         cls_name = type(self).__name__
+#         components_repr = _rlib.repr(self.components)
+#         return f'{cls_name}(components={components_repr})'
+#
+#     def __str__(self):
+#         return self.__repr__()
+#
+#     # Definition of the abstract method in `Condition`
+#     def permission(self, lattice):
+#         return traj_perm.permission_from_point(lattice, self.components)
 
 
 # Lattice and LatticeMap Objects
@@ -349,7 +374,7 @@ class LatticeMap:
         return self.lattice.ndim
 
     @classmethod
-    def from_txt(cls, file, lattice=None):
+    def from_txt(cls, file):
         """Produces lattice map objects from .txt files.
 
         The structure of a latticemap text file is reported in the function
@@ -357,21 +382,11 @@ class LatticeMap:
 
         Args:
             file (str or pathlib.Path): File or filename.
-            lattice (Lattice, optional): Object defining the computational
-                lattice.
 
         Returns:
-            LatticeMap: Object defining a lattice map
+            LatticeMap: Lattice map from file.
         """
-        _, nodes, map_vals = utl.readfile_latticemap(file)
-        lattice_from_file = Lattice(nodes)
-
-        if not lattice:
-            lattice = lattice_from_file
-        elif lattice != lattice_from_file:
-            raise ValueError(msg.err1000(file, lattice))
-
-        return cls(lattice, map_vals)
+        return readfile_latticemap(file)
 
 
 # Trajectory Related Objects
@@ -404,217 +419,283 @@ class Trajectory:
         return self.__repr__()
 
     def to_txt(self, file):
-        utl.write_trajectory_to_txt(file, self.points)
+        self._ams_write_trajectory_to_txt(file, self.points)
+
+    @staticmethod
+    def _ams_write_trajectory_to_txt(fname, points):
+        """Write a trajectory to a txt file according to the AMS guidelines.
+        """
+        with open(fname, 'w+') as tfile:
+            tfile.write(f'{len(points)}\n')
+            for pt in points:
+                tfile.write('\t'.join([f'{p}' for p in pt]) + '\n')
 
 
 # TODO Give in the sampling algorithm one such an object and use it everywhere
-class TrajectoryPermission(abc.ABC):
-    """`TrajectoryPermission` defines an abstract parent class for the machine
-    movement permissions.
+# TODO remove TrajectoryPermission
+# class TrajectoryPermission(abc.ABC):
+#     """`TrajectoryPermission` defines an abstract parent class for the machine
+#     movement permissions.
+#
+#     Notes:
+#         Any sub-class of `TrajectoryPermission` must provide an implementation
+#         of
+#
+#             - :meth:`permission_map`
+#             - :meth:`adjacency_graph`
+#     """
+#
+#     @abc.abstractmethod
+#     def permission_from_map(self, restriction):
+#         """Extends a restriction map in order to respects trajectory
+#         permissions.
+#
+#         Notes
+#             It is not uncommon that the output map and the input map are quite
+#             similar because this function tries to find the minimum of
+#             additional nodes that need to be blocked in order to respect the
+#             trajectory movement permission.
+#
+#         Args:
+#             restriction (LatticeMap): Restriction map
+#
+#         Returns:
+#             LatticeMap: Boolean map for permitted (True) and blocked (False)
+#                 nodes.
+#         """
+#
+#     @abc.abstractmethod
+#     def permission_from_point(self, lattice, components):
+#         """Generates a permission map based on a computational lattice and a
+#         condition point.
+#
+#         Args:
+#             lattice (Lattice): Object defining the computational lattice.
+#             components (array_like, shape=(n,)): Coordinate components.
+#
+#         Returns:
+#             LatticeMap: Boolean map for permitted (True) and blocked (False)
+#                 nodes.
+#         """
+#
+#
+# class TrajectoryPermissionFactory:
+#     """`TrajectoryPermissionFactory` produces instances of
+#     :class:`TrajectoryPermission`.
+#     """
+#
+#     @staticmethod
+#     def make(traj_type, **kwargs):
+#         """Creates `TrajectoryPermission` objects.
+#
+#         Args:
+#             traj_type (str): Trajectory type.
+#             kwargs (dict): Type specific arguments.
+#
+#         Returns:
+#             TrajectoryPermission: Trajectory permission object.
+#         """
+#         if traj_type == 'GantryDominant2D':
+#             return TrajectoryPermissionGantryDominant2D(**kwargs)
+#         else:
+#             raise ValueError(msg.err0000(traj_type))
+#
+#
+# class TrajectoryPermissionGantryDominant2D(TrajectoryPermission):
+#     """`TrajectoryPermissionGantryDominant2D` is the usual 2D gantry dominated
+#     movement restriction class.
+#
+#     Args:
+#         ratio (float): Maximum allowed ratio between table and gantry angle
+#             rotation.
+#     """
+#
+#     def __init__(self, ratio):
+#         self._ratio = ratio
+#
+#     def adjacency_graph(self, lattice):
+#         """Generates an adjacency graph based on a computational lattice.
+#
+#         The entry (i, j) of the graph matrix is non-zero if there is a
+#         connection starting from node i and joining j. The linear indices i, j
+#         are ordered according to the order specified in `_settings`.
+#
+#         Args:
+#             lattice (Lattice): Object defining the computational lattice.
+#
+#         Returns:
+#             ndarray, shape=(lattice.nnodes,)*2: Boolean array representing
+#                 adjacency graph.
+#         """
+#         # Gantry/Table nodes
+#         nodes_gantry = lattice.nodes[DIM_GANTRY]
+#         nodes_table = lattice.nodes[DIM_TABLE]
+#
+#         # Get an array containing the linear indices
+#         lin_ind_arr = self._lin_ind_arr(lattice.nnodes_dim)
+#         shape, dim = lin_ind_arr.shape, (len(nodes_gantry), len(nodes_table))
+#         if shape != dim:
+#             raise ValueError(msg.err2000(shape, dim))
+#
+#         # Iteratively go through the nodes and generate adjacency graph
+#         ratio = 2 * self._ratio   # The opening is symmetric
+#         pts = nodes_table
+#         graph = np.zeros((lattice.nnodes,)*2, dtype=bool)
+#         for igan, node_g in enumerate(nodes_gantry[:-1]):
+#
+#             # Conical opening for the permitted area of the trajectory
+#             dist = abs(node_g - nodes_gantry[igan+1])
+#             for itab, node_t in enumerate(nodes_table):
+#                 cntr = node_t
+#                 is_allowed = utl.is_within_conical_opening(cntr, dist, ratio, pts)
+#
+#                 from_node = lin_ind_arr[igan, itab]
+#                 to_nodes = lin_ind_arr[igan+1, is_allowed]
+#                 graph[from_node, to_nodes] = True
+#
+#         return graph
+#
+#     def permission_from_map(self, restriction):
+#         lattice = restriction.lattice
+#         graph = self.adjacency_graph(restriction.lattice)
+#         values = restriction.map_vals
+#
+#         values_ext = self._perm_from_map(lattice, graph, values)
+#         return LatticeMap(restriction.lattice, values_ext)
+#
+#     def permission_from_point(self, lattice, components):
+#         if components is None:
+#             nnodes_dim = lattice.nnodes_dim
+#             return np.ones(nnodes_dim, dtype=bool)
+#         else:
+#             values = self._perm_from_pt(lattice, components)
+#             return LatticeMap(lattice, values)
+#
+#     def _lin_ind_arr(self, nnodes_dim):
+#         """Returns the two dimensional array of the linear indices where the
+#         lower dimension always considers the GANTRY dimension."""
+#         nnodes = int(np.prod(nnodes_dim))
+#         lin_ind_arr = np.arange(nnodes).reshape(nnodes_dim, order=NP_ORDER)
+#
+#         if DIM_GANTRY > DIM_TABLE:
+#             lin_ind_arr = lin_ind_arr.transpose()
+#
+#         return np.asarray(lin_ind_arr, dtype='int32')
+#
+#     def _perm_from_map(self, lattice, graph, values):
+#         """Returns a permission array respecting graph connectivity and
+#         restrictions from a set of values."""
+#         values = np.array(values, dtype=bool, copy=True).ravel(order=NP_ORDER)
+#         graph = np.array(graph, copy=True)
+#
+#         # Initialize set of nodes to be checked
+#         inodes_control = set(np.where(np.logical_not(values))[0])
+#
+#         # Boundary nodes
+#         lin_ind_arr = self._lin_ind_arr(lattice.nnodes_dim)
+#         no_outgoing = lin_ind_arr[-1, :]
+#         no_incoming = lin_ind_arr[0, :]
+#
+#         # Loop until there is no potential issue anymore
+#         while len(inodes_control) > 0:
+#             inode = inodes_control.pop()
+#
+#             outgoing = np.where(graph[inode, :])[0]
+#             incoming = np.where(graph[:, inode])[0]
+#
+#             # Remove node if there is no path passing through it
+#             outgoing_issue = len(outgoing) == 0 and inode not in no_outgoing
+#             incoming_issue = len(incoming) == 0 and inode not in no_incoming
+#             if not values[inode] or outgoing_issue or incoming_issue:
+#                 # Remove node edges from graph
+#                 graph[inode, :] = False
+#                 graph[:, inode] = False
+#
+#                 # Add the modified nodes to the list to be checked
+#                 inodes_control = inodes_control.union(outgoing)
+#                 inodes_control = inodes_control.union(incoming)
+#
+#                 # Make it unpermitted
+#                 values[inode] = False
+#
+#         return values
+#
+#     def _perm_from_pt(self, lattice, components):
+#         """Returns a permission array respecting a point conditioning.
+#         """
+#         # Initialization
+#         nodes = lattice.nodes
+#         map_vals = np.zeros(lattice.nnodes_dim, dtype=bool)
+#
+#         # Conical opening for the permitted area of the trajectory
+#         cntr = components[DIM_TABLE]
+#         ratio = 2 * self._ratio  # The opening is symmetric
+#         pts = nodes[DIM_TABLE]
+#
+#         # Loop in gantry direction through the lattice
+#         for inode, node in enumerate(nodes[DIM_GANTRY]):
+#             dist = abs(node - components[DIM_GANTRY])
+#             is_allowed = utl.is_within_conical_opening(cntr, dist, ratio, pts)
+#             map_vals[inode, is_allowed] = True
+#
+#         # Correct dimension ordering if needed
+#         if DIM_GANTRY > DIM_TABLE:
+#             map_vals = map_vals.transpose()
+#
+#         return map_vals.ravel(order=NP_ORDER)
 
-    Notes:
-        Any sub-class of `TrajectoryPermission` must provide an implementation
-        of
 
-            - :meth:`permission_map`
-            - :meth:`adjacency_graph`
-    """
+# Methods
+def readfile_latticemap(file) -> LatticeMap:
+    """Reads a lattice map text file.
 
-    @abc.abstractmethod
-    def permission_from_map(self, restriction):
-        """Extends a restriction map in order to respects trajectory
-        permissions.
+    The structure of the lattice map file is as follows::
 
-        Notes
-            It is not uncommon that the output map and the input map are quite
-            similar because this function tries to find the minimum of
-            additional nodes that need to be blocked in order to respect the
-            trajectory movement permission.
+            ----------------------------------------
+            | <nnodes_dim>                         |
+            | <nodes_x>                            |
+            | <nodes_y>                            |
+            | (<nodes_z>)                          |
+            | values(x=0,...,n-1; y=0, (z=0))      |
+            | values(x=0,...,n-1; y=1, (z=0))      |
+            | ...                                  |
+            | values(x=0,...,n-1; y=m-1, (z=0))    |
+            | values(x=0,...,n-1; y=0, (z=1))      |
+            | ...                                  |
+            | values(x=0,...,n-1; y=0, (z=r-1))    |
+            ----------------------------------------
 
-        Args:
-            restriction (LatticeMap): Restriction map
-
-        Returns:
-            LatticeMap: Boolean map for permitted (True) and blocked (False)
-                nodes.
-        """
-
-    @abc.abstractmethod
-    def permission_from_point(self, lattice, components):
-        """Generates a permission map based on a computational lattice and a
-        condition point.
-
-        Args:
-            lattice (Lattice): Object defining the computational lattice.
-            components (array_like, shape=(n,)): Coordinate components.
-
-        Returns:
-            LatticeMap: Boolean map for permitted (True) and blocked (False)
-                nodes.
-        """
-
-
-class TrajectoryPermissionFactory:
-    """`TrajectoryPermissionFactory` produces instances of
-    :class:`_PointTrajectory`.
-    """
-
-    @staticmethod
-    def make(traj_type, **kwargs):
-        """Creates `TrajectoryPermission` objects.
-
-        Args:
-            traj_type (str): Trajectory type.
-            kwargs (dict): Type specific arguments.
-
-        Returns:
-            TrajectoryPermission: Trajectory permission object.
-        """
-        if traj_type == 'GantryDominant2D':
-            return TrajectoryPermissionGantryDominant2D(**kwargs)
-        else:
-            raise ValueError(msg.err0000(traj_type))
-
-
-class TrajectoryPermissionGantryDominant2D(TrajectoryPermission):
-    """`TrajectoryPermissionGantryDominant2D` is the usual 2D gantry dominated
-    movement restriction class.
+    In the case of two-dimensional maps, the quantities in parentheses are
+    omitted.
 
     Args:
-        ratio (float): Maximum allowed ratio between table and gantry angle
-            rotation.
+        file (str or pathlib.Path): File or filename.
+
+    Returns:
+        LatticeMap: Lattice map from file.
     """
+    nodes, values = readfile_nodes_values(file)
+    return LatticeMap(nodes, values)
 
-    def __init__(self, ratio):
-        self._ratio = ratio
 
-    def adjacency_graph(self, lattice):
-        """Generates an adjacency graph based on a computational lattice.
+def readfile_nodes_values(file):
+    """As :meth:`readfile_latticemap` but directly returns the nodes and the
+    values.
+    """
+    lines = utl.readlines_(file, remove_blank_lines=True)
 
-        The entry (i, j) of the graph matrix is non-zero if there is a
-        connection starting from node i and joining j. The linear indices i, j
-        are ordered according to the order specified in `_settings`.
+    # Number of nodes per dimension (defined in lines[0])
+    nnodes_dim = utl.findall_num_in_str(lines[0])
+    ndim = len(nnodes_dim)
 
-        Args:
-            lattice (Lattice): Object defining the computational lattice.
+    # Definition of the lattice (defined in lines[1:ndim+1])
+    lines_nodes, lines_values = lines[1:ndim + 1], lines[ndim + 1:]
+    nodes = [utl.findall_num_in_str(line) for line in lines_nodes]
 
-        Returns:
-            ndarray, shape=(lattice.nnodes,)*2: Boolean array representing
-                adjacency graph.
-        """
-        # Gantry/Table nodes
-        nodes_gantry = lattice.nodes[DIM_GANTRY]
-        nodes_table = lattice.nodes[DIM_TABLE]
+    # Definition of the values (defined in lines[ndim+1:])
+    values = [utl.findall_num_in_str(line) for line in lines_values]
 
-        # Get an array containing the linear indices
-        lin_ind_arr = self._lin_ind_arr(lattice.nnodes_dim)
-        shape, dim = lin_ind_arr.shape, (len(nodes_gantry), len(nodes_table))
-        if shape != dim:
-            raise ValueError(msg.err2000(shape, dim))
+    # Flatten the list of values
+    values = np.asarray([val for vals in values for val in vals])
 
-        # Iteratively go through the nodes and generate adjacency graph
-        ratio = 2 * self._ratio   # The opening is symmetric
-        pts = nodes_table
-        graph = np.zeros((lattice.nnodes,)*2, dtype=bool)
-        for igan, node_g in enumerate(nodes_gantry[:-1]):
-
-            # Conical opening for the permitted area of the trajectory
-            dist = abs(node_g - nodes_gantry[igan+1])
-            for itab, node_t in enumerate(nodes_table):
-                cntr = node_t
-                is_allowed = utl.is_within_conical_opening(cntr, dist, ratio, pts)
-
-                from_node = lin_ind_arr[igan, itab]
-                to_nodes = lin_ind_arr[igan+1, is_allowed]
-                graph[from_node, to_nodes] = True
-
-        return graph
-
-    def permission_from_map(self, restriction):
-        lattice = restriction.lattice
-        graph = self.adjacency_graph(restriction.lattice)
-        values = restriction.map_vals
-
-        values_ext = self._perm_from_map(lattice, graph, values)
-        return LatticeMap(restriction.lattice, values_ext)
-
-    def permission_from_point(self, lattice, components):
-        nnodes_dim = lattice.nnodes_dim
-        if components is None:
-            return np.ones(nnodes_dim, dtype=bool)
-        else:
-            values = self._perm_from_pt(lattice, components)
-            return LatticeMap(lattice, values)
-
-    def _lin_ind_arr(self, nnodes_dim):
-        """Returns the two dimensional array of the linear indices where the
-        lower dimension always considers the GANTRY dimension."""
-        nnodes = int(np.prod(nnodes_dim))
-        lin_ind_arr = np.arange(nnodes).reshape(nnodes_dim, order=NP_ORDER)
-
-        if DIM_GANTRY > DIM_TABLE:
-            lin_ind_arr = lin_ind_arr.transpose()
-
-        return np.asarray(lin_ind_arr, dtype='int32')
-
-    def _perm_from_map(self, lattice, graph, values):
-        """Returns a permission array respecting graph connectivity and
-        restrictions from a set of values."""
-        values = np.array(values, dtype=bool, copy=True).ravel(order=NP_ORDER)
-        graph = np.array(graph, copy=True)
-
-        # Initialize set of nodes to be checked
-        inodes_control = set(np.where(np.logical_not(values))[0])
-
-        # Boundary nodes
-        lin_ind_arr = self._lin_ind_arr(lattice.nnodes_dim)
-        no_outgoing = lin_ind_arr[-1, :]
-        no_incoming = lin_ind_arr[0, :]
-
-        # Loop until there is no potential issue anymore
-        while len(inodes_control) > 0:
-            inode = inodes_control.pop()
-
-            outgoing = np.where(graph[inode, :])[0]
-            incoming = np.where(graph[:, inode])[0]
-
-            # Remove node if there is no path passing through it
-            outgoing_issue = len(outgoing) == 0 and inode not in no_outgoing
-            incoming_issue = len(incoming) == 0 and inode not in no_incoming
-            if not values[inode] or outgoing_issue or incoming_issue:
-                # Remove node edges from graph
-                graph[inode, :] = False
-                graph[:, inode] = False
-
-                # Add the modified nodes to the list to be checked
-                inodes_control = inodes_control.union(outgoing)
-                inodes_control = inodes_control.union(incoming)
-
-                # Make it unpermitted
-                values[inode] = False
-
-        return values
-
-    def _perm_from_pt(self, lattice, components):
-        """Returns a permission array respecting a point conditioning.
-        """
-        # Initialization
-        nodes = lattice.nodes
-        map_vals = np.zeros(lattice.nnodes_dim, dtype=bool)
-
-        # Conical opening for the permitted area of the trajectory
-        cntr = components[DIM_TABLE]
-        ratio = 2 * self._ratio  # The opening is symmetric
-        pts = nodes[DIM_TABLE]
-
-        # Loop in gantry direction through the lattice
-        for inode, node in enumerate(nodes[DIM_GANTRY]):
-            dist = abs(node - components[DIM_GANTRY])
-            is_allowed = utl.is_within_conical_opening(cntr, dist, ratio, pts)
-            map_vals[inode, is_allowed] = True
-
-        # Correct dimension ordering if needed
-        if DIM_GANTRY > DIM_TABLE:
-            map_vals = map_vals.transpose()
-
-        return map_vals.ravel(order=NP_ORDER)
+    return nodes, values
