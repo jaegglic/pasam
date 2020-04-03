@@ -47,8 +47,7 @@ import matplotlib.pylab as plt
 import pasam as ps
 
 # Constants
-_LOC_EX = os.path.dirname(os.path.abspath(__file__))
-_LOC_DIR = os.path.dirname(_LOC_EX)
+_LOC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Computational lattice
 nodes = [np.arange(0, 50), np.arange(0, 25)]
@@ -106,5 +105,3 @@ ax[2].set_title('ratio = 2.0')
 file_fig = os.path.join(_LOC_DIR, 'figures', 'prior_cond.png')
 plt.savefig(file_fig)
 print(f'\nThe result is saved under {file_fig}')
-
-plt.show()
