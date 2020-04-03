@@ -1,15 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Definitions of the trajectory sampling algorithms.
-
-Classes
--------
-    - :class:`Sampler`: (abstract) Parent class for each sampling algorithm.
-    - :class:`SamplerFactory`: Factory for the different samplers.
-    - :class:`SamplerGantryDominant2D`: Gantry dominant 2D trajectory sampler.
-
-Methods
--------
-
+"""This module defines the trajectory sampling algorithms.
 """
 
 # -------------------------------------------------------------------------
@@ -24,38 +14,24 @@ Methods
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # Standard library
-import abc
-import reprlib
-import warnings
 import functools
 # Third party requirements
-import numpy as np
 # Local imports
-from pasam._settings import DIM_GANTRY, RLIB_MAXLIST, NP_SEED
-import pasam._messages as msg
-import pasam.utils as utl
+from pasam._settings import DIM_GANTRY, DIM_TABLE
 from pasam.lattice import *
 
-# Constants and Variables
-np.random.seed(NP_SEED)
-
-# Problematic Seeds
-# TODO fix the issues with the following seeds
-# TODO if all the issues are away remove it
-np.random.seed(155819)
-# np.random.seed(98407703)
-# np.random.seed(138667415)
-
-# Test Random Seeds
-# SEED = np.random.randint(158521456)
-# print('Seed: ', SEED)
-# np.random.seed(SEED)
+# Constants
+_rlib = reprlib.Repr()
+_rlib.maxlist = RLIB_MAXLIST
 
 
+# TODO refactor this entire module
+# Sampling Algorithm
 class Sampler(abc.ABC):
-    """Parent class for all sampling algorithms.
+    """Base class for sampling algorithms.
     """
 
+    @abc.abstractmethod
     def __init__(self, lattice: Lattice):
         self._lattice = lattice
         values = np.ones(lattice.nnodes_dim)
@@ -63,16 +39,36 @@ class Sampler(abc.ABC):
         self._prior_cond = LatticeMap(lattice, values)
 
     @abc.abstractmethod
-    def __call__(self, conditions=None, inspect=False) -> Trajectory:
+    def __call__(self, conditions=None, inspect=False):
         """Executes the sampling algorithm and produces a possible trajectory.
 
         Args:
-            conditions (list, optional): Set of conditions.
+            conditions (list, optional): Set of conditions of either strings
+               that indicate the path of a conditioning file or array_like
+               objects that represent conditioning points.
             inspect (bool, optional): Inspect/transform the given conditioning.
 
         Returns:
             Trajectory: Sampled trajectory
         """
+
+    @property
+    def prior_cond(self):
+        """Returns the prior conditioning map.
+
+        Returns:
+            LatticeMap
+        """
+        return self._prior_cond
+
+    @property
+    def prior_prob(self):
+        """Returns the prior probability map.
+
+        Returns:
+            LatticeMap
+        """
+        return self._prior_prob
 
     @abc.abstractmethod
     def set_prior_cond(self, conditions=None, inspect=False) -> None:
@@ -103,14 +99,13 @@ class Sampler(abc.ABC):
 class GantryDominant2D(Sampler):
     """`GantryDominant2D` is a 2D gantry dominated trajectory movement sampler.
     """
-    # TODO refactor all of this class
 
     def __call__(self, conditions=None, inspect=False):
         # Get complete conditioning map
         if not conditions:
             conditions = []
         conditions.append(self._prior_cond)
-        cond_map = self._cond_map(conditions, inspect)
+        cond_map = self.cond_map(conditions, inspect)
 
         # Sample path return it as a `Trajectory` object
         points = self._sample_trajectory_points(cond_map)
@@ -133,13 +128,53 @@ class GantryDominant2D(Sampler):
         return self.__repr__()
 
     # Public Methods
+
+    def cond_map(self, conditions, inspect):
+        """Computes a lattice map representing the union of all conditions.
+
+        Args:
+            conditions (list, optional): Set of conditions of either strings
+               that indicate the path of a conditioning file or array_like
+               objects that represent conditioning points.
+            inspect (bool, optional): Inspect/transform the given conditioning.
+
+        Returns:
+            LatticeMap: Conditioning map.
+        """
+
+        if conditions:
+            # Iteratively load all the different conditioning maps
+            cond_maps = []
+            for cond in conditions:
+                if isinstance(cond, str):
+                    file = cond
+                    cond_map = self._cond_map_from_str(file)
+                elif isinstance(cond, LatticeMap):
+                    cond_map = cond
+                else:
+                    components = np.asarray(cond)
+                    cond_map = self._cond_map_from_point(components)
+                cond_maps.append(cond_map)
+
+            # Multiply through the set of conditioning maps
+            map_ = functools.reduce(lambda a, b: a * b, cond_maps)
+
+            # Check/transform to a valid conditioning
+            if inspect:
+                values = self._validate_cond_values(map_.values)
+                map_.values = values
+        else:
+            values = np.ones(self._lattice.nnodes_dim, dtype=bool)
+            map_ = LatticeMap(self._lattice, values)
+        return map_
+
     def set_adjacency_graph(self):
         """Computes and stores the adjacency graph of the sampler."""
         self._graph = self._adjacency_graph()
 
-    def set_prior_cond(self, conditions=None, validity_check=True):
+    def set_prior_cond(self, conditions=None, inspect=True):
         # Get conditioning map
-        map_ = self._cond_map(conditions, validity_check)
+        map_ = self.cond_map(conditions, inspect)
 
         # Minor consistency check
         if self._lattice != map_.lattice:
@@ -155,7 +190,7 @@ class GantryDominant2D(Sampler):
 
         # If the map represents the energy, transform it to probability values
         if energy:
-            values = np.exp(-map_.map_vals)
+            values = np.exp(-map_.values)
             map_ = LatticeMap(self._lattice, values)
 
         # Set value within self
@@ -246,36 +281,6 @@ class GantryDominant2D(Sampler):
         if ratio < ratio_min:
             raise ValueError(msg.err3003)
 
-    def _cond_map(self, conditions, inspect):
-        """Computes a suitable lattice map for the movement constraint of each
-        conditioning and multiplies it to obtain a global map.
-        """
-        if conditions:
-            # Iteratively load all the different conditioning maps
-            cond_maps = []
-            for cond in conditions:
-                if isinstance(cond, str):
-                    file = cond
-                    cond_map = self._cond_map_from_str(file)
-                elif isinstance(cond, LatticeMap):
-                    cond_map = cond
-                else:
-                    components = np.asarray(cond)
-                    cond_map = self._cond_map_from_point(components)
-                cond_maps.append(cond_map)
-
-            # Multiply through the set of conditioning maps
-            map_ = functools.reduce(lambda a, b: a * b, cond_maps)
-
-            # Check/transform to a valid conditioning
-            if inspect:
-                values = self._validate_cond_values(map_.map_vals)
-                map_.map_vals = values
-        else:
-            values = np.ones(self._lattice.nnodes_dim, dtype=bool)
-            map_ = LatticeMap(self._lattice, values)
-        return map_
-
     def _cond_map_from_point(self, components):
         # Initialization
         lattice = self._lattice
@@ -329,9 +334,6 @@ class GantryDominant2D(Sampler):
         """Returns a valid array respecting graph connectivity and
         restrictions from a set of values."""
 
-        # TODO if the ratio is too small, this will cover the region by
-        #  horizontal areas, because it uses the adjacency graph which only considers
-        #  the direct neighbors
         values = np.array(values, dtype=bool, copy=True).ravel(order=NP_ORDER)
         if not self._graph:
             self.set_adjacency_graph()
@@ -370,8 +372,6 @@ class GantryDominant2D(Sampler):
         return values
 
     def _sample_trajectory_points(self, perm_map):
-
-        # TODO check the conditioning if needed
         lattice = self._lattice
         ndim = lattice.ndim
         ntraj = lattice.nnodes_dim[DIM_GANTRY]
@@ -389,13 +389,13 @@ class GantryDominant2D(Sampler):
             perm_slice = perm_map.slice(DIM_GANTRY, ind_gantry_pos)
 
             # import matplotlib.pyplot as plt
-            # plt.imshow(np.reshape((self._prior_prob * perm_map).map_vals, (180, 90),
+            # plt.imshow(np.reshape((self._prior_prob * perm_map).values, (180, 90),
             #                       order='F').transpose(), origin='lower')
             # plt.plot([ind_gantry_pos,]*2, [0, 89], 'r--')
             # plt.show()
 
-            if np.sum(perm_slice.map_vals) >= 1:
-                distribution = (prior_slice * perm_slice).map_vals
+            if np.sum(perm_slice.values) >= 1:
+                distribution = (prior_slice * perm_slice).values
                 try:
                     distribution = distribution / np.sum(distribution)
                 except (ZeroDivisionError, FloatingPointError,
@@ -405,7 +405,7 @@ class GantryDominant2D(Sampler):
                 distribution = distribution / np.sum(distribution)
             else:
                 import matplotlib.pyplot as plt
-                plt.imshow(np.reshape((self._prior_prob * perm_map).map_vals, (180, 90),
+                plt.imshow(np.reshape((self._prior_prob * perm_map).values, (180, 90),
                                       order='F').transpose(), origin='lower')
                 plt.show()
                 raise ValueError('TODO Error message for not possible settings '
@@ -426,3 +426,45 @@ class GantryDominant2D(Sampler):
             traj_points[ind_gantry_pos] = traj_point
             ind_to_do[ind_gantry_pos] = False
         return traj_points
+
+
+# Trajectory Object
+class Trajectory:
+    """Definition of dynamic trajectories.
+
+    Args:
+        points (array_like): Sequence of trajectory points.
+
+    Attributes:
+        points (list): Sequence of trajectory points.
+
+    """
+
+    def __init__(self, points):
+        self.points = list(points)
+
+    def __iter__(self):
+        return iter(self.points)
+
+    def __len__(self):
+        return len(self.points)
+
+    def __repr__(self):
+        cls_name = type(self).__name__
+        points_repr = _rlib.repr(self.points)
+        return f'{cls_name}(points={points_repr})'
+
+    def __str__(self):
+        return self.__repr__()
+
+    def to_txt(self, file):
+        self._ams_write_trajectory_to_txt(file, self.points)
+
+    @staticmethod
+    def _ams_write_trajectory_to_txt(fname, points):
+        """Write a trajectory to a txt file according to the AMS guidelines.
+        """
+        with open(fname, 'w+') as tfile:
+            tfile.write(f'{len(points)}\n')
+            for pt in points:
+                tfile.write('\t'.join([f'{p}' for p in pt]) + '\n')

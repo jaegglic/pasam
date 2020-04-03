@@ -1,13 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Definitions of some package tools.
-
-Generic methods
----------------
-    - :meth:`findall_num_in_str`: Extracts all numbers from a string.
-    - :meth:`isincreasing`: Checks if a sequence of values increases.
-    - :meth:`permission_map_from_condition_file`: Permission map from file.
-    - :meth:`permission_map_from_condition_point`: Permission map from point.
-    - :meth:`readlines_`: Reads txt file (possibility to remove empty lines).
+"""This module defines some generic package tools.
 """
 
 # -------------------------------------------------------------------------
@@ -30,7 +22,7 @@ import numpy as np
 import pasam._messages as msg
 from pasam._settings import NP_ORDER, NP_ATOL, NP_RTOL
 
-
+# TODO refactor this entire module
 # Public methods
 def ams_val_map_to_bool_map(vals):
     """Assigns `0` to ``True`` and `1` to ``False``.
@@ -42,23 +34,23 @@ def ams_val_map_to_bool_map(vals):
     INTERVAL_TRUE  = (-0.1, 0.1)
     INTERVAL_FALSE = ( 0.9, 1.1)
 
+    # Reverse values
     vals = np.asarray(vals).ravel(order=NP_ORDER)
-    map_vals = np.asarray(vals, dtype=bool)
-
     ind_true = np.logical_and(vals > INTERVAL_TRUE[0], vals < INTERVAL_TRUE[1])
     ind_false = np.logical_and(vals > INTERVAL_FALSE[0], vals < INTERVAL_FALSE[1])
 
     # Check whether all values have been covered
-    if np.sum(np.logical_xor(ind_true, ind_false)) != len(map_vals):
+    values = np.asarray(vals, dtype=bool)
+    if np.sum(np.logical_xor(ind_true, ind_false)) != len(values):
         ind_not_unique = np.logical_not( np.logical_xor(ind_true, ind_false) )
         ind = np.where(ind_not_unique)[0]
         raise ValueError(msg.err0001(vals[ind]))
 
     # Tag nodes according to the permission
-    map_vals[ind_true] = True
-    map_vals[ind_false] = False
+    values[ind_true] = True
+    values[ind_false] = False
 
-    return map_vals
+    return values
 
 
 def cartesian_product(*args, order='F'):
@@ -98,7 +90,6 @@ def cartesian_product(*args, order='F'):
     return [tuple(prod) for prod in result]
 
 
-# TODO unit test utl.conical_opening_indicator
 def within_conical_opening(center, distance, ratio, points):
     """Indicates whether the points are within (True) or outside (False) of the
     conical opening.
@@ -107,24 +98,25 @@ def within_conical_opening(center, distance, ratio, points):
 
         An example of a conical (symmetric) opening::
 
-                      `center`
-                         *                  -----
-                        | \                     |
-                       |   \                    |
-                      |     \               `distance`
-                     |       \                  |
-                    |         \                 |
-                   |-----------\            -----
+                      center
+                         *                ---
+                        / \                |
+                       /   \               |
+                      /     \              | distance
+                     /       \             |
+                    /         \            |
+                   /___________\          ---
 
-                   |------------|           `distance * ratio`
+                  |-------------|            distance * ratio
 
-             *---------*----*--------*      `points`
+             *---------*----*--------*       points
+
+          [False,    True, True,   False]    return
 
         where `distance` is the height of the triangle, the opening is the
         product `distance * ratio` and `points` is a set of real values. For
         the given example above, two out of four points are lying within the
-        conical (symmetric) opening so that the function would return
-        `[False, True, True, False]`.
+        conical (symmetric) opening.
 
     Args:
         center (float): Center of the cone.

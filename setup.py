@@ -7,9 +7,6 @@ import unittest
 
 # Install Requires Version
 _NUMPY_VERSION                  = '1.15.4'
-# TODO: Remove SPHINX dependencies if not needed (here and below)
-# _SPHINX_VERSION_MIN             = '2.2.2'
-# _SPHINX_RTD_THEME_VERSION_MIN   = '0.4.3'
 
 # Load long description from the README.rst file
 with open("README.rst", "r") as readme:
@@ -37,8 +34,6 @@ setup(
     python_requires='>=3.6',
     install_requires=[
         f'numpy=={_NUMPY_VERSION}',
-        # f'sphinx>={_SPHINX_VERSION_MIN}',
-        # f'sphinx_rtd_theme>={_SPHINX_RTD_THEME_VERSION_MIN}',
     ],
     test_suite='setup.test_suite',
     classifiers=[

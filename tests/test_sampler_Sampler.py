@@ -18,13 +18,17 @@ Unit tests for the Sampler* classes in `pasam.sampling.py`.
 
 # Standard library
 import unittest
+import os
 # Third party requirements
 import numpy as np
 # Local imports
-from pasam._paths import PATH_TESTFILES
 from pasam._settings import NP_ORDER
 from pasam.lattice import Lattice, LatticeMap
 from pasam.sampling import Sampler, GantryDominant2D
+
+# Constants
+_LOC = os.path.dirname(os.path.abspath(__file__))
+PATH_TESTFILES = os.path.join(_LOC, 'testfiles', '')
 
 
 class TestSampler(unittest.TestCase):
@@ -167,12 +171,12 @@ class TestSampler(unittest.TestCase):
         # from pasam._paths import PATH_EXAMPLES
         # nodes = [np.arange(-179, 181, 2), np.arange(-89, 91, 2)]
         # lattice = Lattice(nodes)
-        # conditions = [PATH_EXAMPLES + 'example_condition_2D.txt']
+        # conditions = [PATH_EXAMPLES + 'restrictions_180x90.txt']
         #
         # ratio = 0.5
         # sampler = GantryDominant2D(lattice, ratio=ratio)
         # sampler.set_prior_cond(conditions)
-        # plt_values = np.reshape(sampler._prior_cond.map_vals,
+        # plt_values = np.reshape(sampler._prior_cond.values,
         #                         lattice.nnodes_dim, order='F').transpose()
         # plt.imshow(plt_values, origin='lower')
         # plt.show()
@@ -239,7 +243,7 @@ class TestSampler(unittest.TestCase):
         # traj = sampler()
         # print(traj.points)
         #
-        # plt.imshow(np.reshape(prior_map.map_vals,
+        # plt.imshow(np.reshape(prior_map.values,
         #                       prior_map.lattice.nnodes_dim,
         #                       order=NP_ORDER).transpose(),
         #            origin='lower')

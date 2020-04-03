@@ -12,6 +12,11 @@ Lattice
 .. automodule:: pasam.lattice
    :members:
 
+Sampling
+========
+.. automodule:: pasam.sampling
+   :members:
+
 Utilities
 =========
 .. automodule:: pasam.utils

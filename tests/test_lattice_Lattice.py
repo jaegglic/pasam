@@ -18,17 +18,18 @@ Unit tests for the Lattice* classes in `pasam.lattice`.
 
 # Standard library
 import unittest
+import os
 # Third party requirements
 import numpy as np
 # Local imports
-import pasam._settings as settings
-from pasam._paths import PATH_TESTFILES
+from pasam._settings import NP_SEED
 from pasam.lattice import Lattice, LatticeMap, readfile_latticemap
 
-# Constants and Variables
-_NP_ORDER = settings.NP_ORDER
+# Constants
+np.random.seed(NP_SEED)
 
-np.random.seed(settings.NP_SEED)
+_LOC = os.path.dirname(os.path.abspath(__file__))
+PATH_TESTFILES = os.path.join(_LOC, 'testfiles', '')
 
 
 class TestLattice(unittest.TestCase):
@@ -236,7 +237,7 @@ class TestLattice(unittest.TestCase):
         values = np.random.randn(lattice.nnodes)
         latticemap = LatticeMap(lattice, values)
         self.assertTrue(isinstance(latticemap, LatticeMap))
-        self.assertTrue(np.all(values == latticemap.map_vals))
+        self.assertTrue(np.all(values == latticemap.values))
         with self.assertRaises(ValueError):
             LatticeMap(lattice, values[:-1])
         with self.assertRaises(ValueError):
@@ -244,7 +245,7 @@ class TestLattice(unittest.TestCase):
 
         latticemap = LatticeMap(self.nodes2D, values)
         self.assertTrue(isinstance(latticemap, LatticeMap))
-        self.assertTrue(np.all(values == latticemap.map_vals))
+        self.assertTrue(np.all(values == latticemap.values))
         with self.assertRaises(ValueError):
             LatticeMap(self.nodes2D, values[:-1])
         with self.assertRaises(ValueError):
@@ -303,15 +304,15 @@ class TestLattice(unittest.TestCase):
                                     for ix in ind_x])
 
         self.assertTrue(latticemap_x == LatticeMap(lattice=lattice[nx_st, :],
-                                                   map_vals=values[lin_ind_x]))
+                                                   values=values[lin_ind_x]))
         self.assertTrue(latticemap_xslice == LatticeMap(lattice=lattice[nx_st:nx_end, :],
-                                                        map_vals=values[lin_ind_xslice]))
+                                                        values=values[lin_ind_xslice]))
         self.assertTrue(latticemap_y == LatticeMap(lattice=lattice[:, ny_st],
-                                                   map_vals=values[lin_ind_y]))
+                                                   values=values[lin_ind_y]))
         self.assertTrue(latticemap_yslice == LatticeMap(lattice=lattice[:, ny_st:ny_end],
-                                                        map_vals=values[lin_ind_yslice]))
+                                                        values=values[lin_ind_yslice]))
         self.assertTrue(latticemap_xyslice == LatticeMap(lattice=lattice[nx_st:nx_end, ny_st:ny_end],
-                                                         map_vals=values[lin_ind_xyslice]))
+                                                         values=values[lin_ind_xyslice]))
 
     def test_LatticeMap2D__add__(self):
         lattice = Lattice(self.nodes2D)
@@ -406,7 +407,7 @@ class TestLattice(unittest.TestCase):
             0.61, 0.62, 0.63, 0.64, 0.65,
             0.51, 0.52, 0.53, 0.54, 0.55,
         ]
-        latticemap = LatticeMap(lattice, map_vals=values)
+        latticemap = LatticeMap(lattice, values=values)
 
         lattice_slice_0 = Lattice([[1, 2, 3, 4, 5, 6]])
         values_slice_0 = [0.52, 0.62, 0.72, 0.72, 0.62, 0.52]
@@ -443,7 +444,7 @@ class TestLattice(unittest.TestCase):
         latticemap = LatticeMap(lattice, values)
 
         self.assertTrue(isinstance(latticemap, LatticeMap))
-        self.assertTrue(np.all(values == latticemap.map_vals))
+        self.assertTrue(np.all(values == latticemap.values))
         with self.assertRaises(ValueError):
             LatticeMap(lattice, values[:-1])
         with self.assertRaises(ValueError):
@@ -451,7 +452,7 @@ class TestLattice(unittest.TestCase):
 
         latticemap = LatticeMap(self.nodes3D, values)
         self.assertTrue(isinstance(latticemap, LatticeMap))
-        self.assertTrue(np.all(values == latticemap.map_vals))
+        self.assertTrue(np.all(values == latticemap.values))
         with self.assertRaises(ValueError):
             LatticeMap(self.nodes3D, values[:-1])
         with self.assertRaises(ValueError):
@@ -504,11 +505,11 @@ class TestLattice(unittest.TestCase):
                                      for iy in ind_y
                                      for ix in ind_x])
         self.assertTrue(latticemap_z == LatticeMap(lattice=lattice[:, :, nz_st],
-                                                   map_vals=values[lin_ind_z]))
+                                                   values=values[lin_ind_z]))
         self.assertTrue(latticemap_zslice == LatticeMap(lattice=lattice[:, :, nz_st:nz_end],
-                                                        map_vals=values[lin_ind_zslice]))
+                                                        values=values[lin_ind_zslice]))
         self.assertTrue(latticemap_xyzslice == LatticeMap(lattice=lattice[nx_st:nx_end, ny_st:ny_end, nz_st:nz_end],
-                                                          map_vals=values[lin_ind_xyzslice]))
+                                                          values=values[lin_ind_xyzslice]))
 
     def test_LatticeMap3D__add__(self):
         lattice = Lattice(self.nodes3D)

@@ -18,11 +18,14 @@ Unit tests for the Trajectory* classes in `pasam.lattice`.
 
 # Standard library
 import unittest
+import os
 # Third party requirements
-import numpy as np
 # Local imports
-from pasam._paths import PATH_TESTFILES
-from pasam.lattice import Trajectory
+from pasam.sampling import Trajectory
+
+# Constants
+_LOC = os.path.dirname(os.path.abspath(__file__))
+PATH_TESTFILES = os.path.join(_LOC, 'testfiles', '')
 
 
 class TestTrajectory(unittest.TestCase):
