@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 """EXAMPLE FOR VISUALIZING THE CONDITIONING REFINEMENT
 
-This is a 2D example for a 50 x 25 grid representing the following setup::
+This module visualized the refinement of the prior conditioning for different
+sampler settings.
+
+We use two-dimensional 50 x 25 grid representing the following setup::
 
            +25° --------------------------------------
                 |                             00     |
@@ -23,8 +26,6 @@ Depending on the sampling settings, the prior conditioning might need a
 refinement. Otherwise it can happen that due to the restricted mobility (e.g.
 the movement ratio in `ratio`) the trajectory can be stuck close to a
 conditioning area.
-
-This file visualizes the refinement.
 """
 
 # -------------------------------------------------------------------------
@@ -73,19 +74,14 @@ values_ref_20 = np.reshape(cond_map_ref_20.values, nnodes_dim, order='F')
 _, ax = plt.subplots(3, 1, figsize=(5, 8))
 min_x, max_x = nodes[0][0], nodes[0][-1]
 min_y, max_y = nodes[1][0], nodes[1][-1]
-extend = [min_x, max_x, min_y, max_y]
-ax[0].imshow(values_raw_10.transpose(),
-             origin='lower',
-             cmap='viridis',
-             extent=extend)
-ax[1].imshow((0.5*values_ref_10 + 0.5*values_raw_10).transpose(),
-             origin='lower',
-             cmap='viridis',
-             extent=extend)
-ax[2].imshow((0.5*values_ref_20 + 0.5*values_raw_10).transpose(),
-             origin='lower',
-             cmap='viridis',
-             extent=extend)
+im_args = {
+    'origin':   'lower',
+    'cmap':     'viridis',
+    'extent':   [min_x, max_x, min_y, max_y],
+}
+ax[0].imshow(values_raw_10.transpose(), **im_args)
+ax[1].imshow((0.5*values_ref_10 + 0.5*values_raw_10).transpose(), **im_args)
+ax[2].imshow((0.5*values_ref_20 + 0.5*values_raw_10).transpose(), **im_args)
 
 # Plot settings
 font_size = 12

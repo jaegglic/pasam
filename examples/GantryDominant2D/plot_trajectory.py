@@ -48,9 +48,9 @@ import pasam as ps
 # that it is no longer possible to avoid the forbidden zone. Some 'problematic'
 # seeds are::
 #
-#   - np.random.seed(155819)
-#   - np.random.seed(98407703)
-#   - np.random.seed(138667415).
+#   - trajectory = sampler(..., seed=155819)
+#   - trajectory = sampler(..., seed=98407703)
+#   - trajectory = sampler(..., seed=138667415).
 #
 # However, setting `inspect=True` avoids these kind of problems. See also the
 # example in `plot_prior_cond.py`.
@@ -77,7 +77,7 @@ conditions = [file_cond]
 sampler.set_prior_cond(conditions, inspect=True)
 
 # Sample Trajectory
-trajectory = sampler(inspect=False)
+trajectory = sampler()
 
 # Plot the Result
 map_ = sampler.prior_cond * sampler.prior_prob
