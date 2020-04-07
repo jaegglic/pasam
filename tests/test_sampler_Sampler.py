@@ -22,7 +22,7 @@ import os
 # Third party requirements
 import numpy as np
 # Local imports
-from pasam._settings import NP_ORDER
+from pasam._settings import NP_ATOL, NP_RTOL
 from pasam.lattice import Lattice, LatticeMap
 from pasam.sampling import Sampler, GantryDominant2D
 
@@ -127,7 +127,7 @@ class TestSampler(unittest.TestCase):
 
         ratio = 2.0
         sampler = GantryDominant2D(lattice, ratio=ratio)
-        sampler.set_prior_cond(conditions)
+        sampler.set_prior_cond(conditions, inspect=True)
         self.assertEqual(sampler._prior_cond, prior_cond_true)
 
         values_true = np.array([
@@ -142,7 +142,7 @@ class TestSampler(unittest.TestCase):
 
         ratio = 1.0
         sampler = GantryDominant2D(lattice, ratio=ratio)
-        sampler.set_prior_cond(conditions)
+        sampler.set_prior_cond(conditions, inspect=True)
         self.assertEqual(sampler._prior_cond, prior_cond_true)
 
     def test_GantryDominant2D_set_prior_cond_with_str(self):
@@ -227,37 +227,33 @@ class TestSampler(unittest.TestCase):
 
         self.assertEqual(sampler._prior_cond, prior_cond_true)
 
-    def test_SamplerFactory_simple(self):
-        # TODO make this test happen
-        pass
-        # import matplotlib.pylab as plt
-        # file = PATH_TESTFILES + 'latticemap2d_sampler.txt'
-        # prior_map = LatticeMap.from_txt(file)
-        #
-        # factory = SamplerFactory
-        # settings = {'traj_type': 'GantryDominant2D', 'ratio': 2.0}
-        # sampler = factory.make(prior_map, **settings)
-        # self.assertTrue(isinstance(sampler, Sampler))
-        # self.assertTrue(isinstance(sampler, SamplerGantryDominant2D))
-        #
-        # traj = sampler()
-        # print(traj.points)
-        #
-        # plt.imshow(np.reshape(prior_map.values,
-        #                       prior_map.lattice.nnodes_dim,
-        #                       order=NP_ORDER).transpose(),
-        #            origin='lower')
-        #
-        # traj_x = []
-        # traj_y = []
-        # for pt in traj.points:
-        #     ind = prior_map.lattice.indices_from_point(pt)
-        #     traj_x.append(ind[0])
-        #     traj_y.append(ind[1])
-        # plt.plot(traj_x, traj_y, 'r')
-        #
-        # plt.show()
-        #
-        # with self.assertRaises(ValueError):
-        #     factory.make(prior_map, traj_type='NotDefined')
+    def test_GantryDominant2D__call__conditioning(self):
+        # Computational lattice
+        nodes = [
+            [-4, -3, -2, -1, 0, 1, 2, 3, 4],
+            [0, 1, 2, 3, 4, 5, 6]
+        ]
+        lattice = Lattice(nodes)
 
+        # Sampler
+        ratio = 2.0
+        sampler = GantryDominant2D(lattice=lattice, ratio=ratio)
+
+        # Sample Trajectory
+        trajectory = sampler(conditions=[(0, 3)])
+
+        # Check length
+        self.assertTrue(len(trajectory), len(nodes[0]))
+
+        # Check conditioing
+        self.assertEqual(trajectory[4], (0, 3))
+
+        # Check max trajectory spreading
+        pt_last = trajectory[0]
+        self.assertEqual(pt_last[0], nodes[0][0])
+        for pt_next, nd_next in zip(trajectory[1:], nodes[0][1:]):
+            self.assertEqual(pt_next[0], nd_next)
+            max_spread = abs(pt_next[0]-pt_last[0])*ratio
+            max_spread += NP_ATOL + NP_RTOL*max_spread
+            self.assertTrue(abs(pt_next[1]-pt_last[1]) <= max_spread)
+            pt_last = pt_next

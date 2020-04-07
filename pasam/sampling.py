@@ -25,7 +25,6 @@ _rlib = reprlib.Repr()
 _rlib.maxlist = RLIB_MAXLIST
 
 
-# TODO refactor this entire module
 # Sampling Algorithm
 class Sampler(abc.ABC):
     """Base class for sampling algorithms.
@@ -34,12 +33,12 @@ class Sampler(abc.ABC):
     @abc.abstractmethod
     def __init__(self, lattice: Lattice):
         self._lattice = lattice
-        values = np.ones(lattice.nnodes_dim)
-        self._prior_prob = LatticeMap(lattice, values)
-        self._prior_cond = LatticeMap(lattice, values)
+        ones = np.ones(lattice.nnodes_dim)
+        self._prior_prob = LatticeMap(lattice, ones, dtype=int)
+        self._prior_cond = LatticeMap(lattice, ones, dtype=bool)
 
     @abc.abstractmethod
-    def __call__(self, conditions=None, inspect=False):
+    def __call__(self, conditions=None, inspect=False, seed=None):
         """Executes the sampling algorithm and produces a possible trajectory.
 
         Args:
@@ -47,6 +46,7 @@ class Sampler(abc.ABC):
                that indicate the path of a conditioning file or array_like
                objects that represent conditioning points.
             inspect (bool, optional): Inspect/transform the given conditioning.
+            seed (int, optional): Seed used by the random procedure.
 
         Returns:
             Trajectory: Sampled trajectory
@@ -100,21 +100,28 @@ class GantryDominant2D(Sampler):
     """`GantryDominant2D` is a 2D gantry dominated trajectory movement sampler.
     """
 
-    def __call__(self, conditions=None, inspect=False):
-        # Get complete conditioning map
+    def __call__(self, conditions=None, inspect=False, seed=None):
+        # Set the random seed for reproducibility
+        np.random.seed(seed)
+
+        # Combine the `conditions` with the prior conditioning
         if not conditions:
             conditions = []
         conditions.append(self._prior_cond)
         cond_map = self.cond_map(conditions, inspect)
 
-        # Sample path return it as a `Trajectory` object
+        # Sample path and generate a `Trajectory` object
         points = self._sample_trajectory_points(cond_map)
         trajectory = Trajectory(points)
+
         return trajectory
 
     def __init__(self, lattice, ratio=1.0):
+        # Check the ratio with respect to the lattice, for more information
+        # consult the docstring in :meth:`_check_ratio`
         self._check_ratio(lattice, ratio)
 
+        # Initialize the values
         super().__init__(lattice)
         self._ratio = ratio
         self._graph = None
@@ -128,7 +135,7 @@ class GantryDominant2D(Sampler):
         return self.__repr__()
 
     # Public Methods
-
+    # TODO Refactor `cond_map`
     def cond_map(self, conditions, inspect):
         """Computes a lattice map representing the union of all conditions.
 
@@ -168,11 +175,13 @@ class GantryDominant2D(Sampler):
             map_ = LatticeMap(self._lattice, values)
         return map_
 
+    # TODO Refactor `set_acjacency_graph`
     def set_adjacency_graph(self):
         """Computes and stores the adjacency graph of the sampler."""
         self._graph = self._adjacency_graph()
 
-    def set_prior_cond(self, conditions=None, inspect=True):
+    # TODO Refactor `set_prior_cond`
+    def set_prior_cond(self, conditions=None, inspect=False):
         # Get conditioning map
         map_ = self.cond_map(conditions, inspect)
 
@@ -183,6 +192,7 @@ class GantryDominant2D(Sampler):
         # Set value within self
         self._prior_cond = map_
 
+    # TODO Refactor `set_prior_prob`
     def set_prior_prob(self, map_, energy=False):
         # Minor consistency checks
         if self._lattice != map_.lattice:
@@ -197,6 +207,7 @@ class GantryDominant2D(Sampler):
         self._prior_prob = map_
 
     # Private Methods
+    # TODO Refactor `_adjacency_graph`
     def _adjacency_graph(self):
         """Computes an adjacency graph based on a computational lattice.
 
@@ -233,6 +244,7 @@ class GantryDominant2D(Sampler):
 
         return graph
 
+    # TODO Refactor `_check_ratio`
     @staticmethod
     def _check_ratio(lattice, ratio):
         """If the ratio is too small, the trajectory can not jump to upper or
@@ -281,6 +293,7 @@ class GantryDominant2D(Sampler):
         if ratio < ratio_min:
             raise ValueError(msg.err3003)
 
+    # TODO Refactor `_cond_map_from_point`
     def _cond_map_from_point(self, components):
         # Initialization
         lattice = self._lattice
@@ -307,6 +320,7 @@ class GantryDominant2D(Sampler):
 
         return LatticeMap(lattice, values.ravel(order=NP_ORDER))
 
+    # TODO Refactor `_cond_map_from_str`
     def _cond_map_from_str(self, file):
         # Read the conditioning file and invert the values
         nodes, vals = readfile_nodes_values(file)
@@ -318,6 +332,7 @@ class GantryDominant2D(Sampler):
 
         return LatticeMap(nodes, values)
 
+    # TODO Refactor `_linear_indices`
     def _linear_indices(self):
         """Returns the two dimensional array of the linear indices where the
         lower dimension always considers the GANTRY dimension."""
@@ -330,8 +345,10 @@ class GantryDominant2D(Sampler):
 
         return np.asarray(lin_ind, dtype='int32')
 
+    # TODO Refactor `_validate_cond_values`
+    # TODO maybe rename it into `_valide_condition_array`
     def _validate_cond_values(self, values):
-        """Returns a valid array respecting graph connectivity and
+        """Returns a valid condition array respecting graph connectivity and
         restrictions from a set of values."""
 
         values = np.array(values, dtype=bool, copy=True).ravel(order=NP_ORDER)
@@ -371,6 +388,7 @@ class GantryDominant2D(Sampler):
 
         return values
 
+    # TODO Refactor `_sample_trajectory_points`
     def _sample_trajectory_points(self, perm_map):
         lattice = self._lattice
         ndim = lattice.ndim
@@ -400,10 +418,12 @@ class GantryDominant2D(Sampler):
                     distribution = distribution / np.sum(distribution)
                 except (ZeroDivisionError, FloatingPointError,
                         RuntimeWarning, RuntimeError):
+                    # TODO do something about that case!!
                     raise ValueError('HERE WE SHOULD TAKE THE PERMITTED REGION WITHOUT'
                                      'THE PRIOR DISTRIBUTION AND SAMPLE UNIFORMLY IN THERE')
                 distribution = distribution / np.sum(distribution)
             else:
+                # TODO also react to this situation
                 import matplotlib.pyplot as plt
                 plt.imshow(np.reshape((self._prior_prob * perm_map).values, (180, 90),
                                       order='F').transpose(), origin='lower')
@@ -433,15 +453,18 @@ class Trajectory:
     """Definition of dynamic trajectories.
 
     Args:
-        points (array_like): Sequence of trajectory points.
+        points (array_like of array_like): Sequence of trajectory points.
 
     Attributes:
-        points (list): Sequence of trajectory points.
+        points (list of tuple): Sequence of trajectory points.
 
     """
 
+    def __getitem__(self, key):
+        return self.points[key]
+
     def __init__(self, points):
-        self.points = list(points)
+        self.points = list(tuple(p) for p in points)
 
     def __iter__(self):
         return iter(self.points)
