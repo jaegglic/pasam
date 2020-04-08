@@ -127,7 +127,7 @@ class TestSampler(unittest.TestCase):
 
         ratio = 2.0
         sampler = GantryDominant2D(lattice, ratio=ratio)
-        sampler.set_prior_cond(conditions, inspect=True)
+        sampler.set_prior_cond(conditions, validate=True)
         self.assertEqual(sampler._prior_cond, prior_cond_true)
 
         values_true = np.array([
@@ -142,7 +142,7 @@ class TestSampler(unittest.TestCase):
 
         ratio = 1.0
         sampler = GantryDominant2D(lattice, ratio=ratio)
-        sampler.set_prior_cond(conditions, inspect=True)
+        sampler.set_prior_cond(conditions, validate=True)
         self.assertEqual(sampler._prior_cond, prior_cond_true)
 
     def test_GantryDominant2D_set_prior_cond_with_str(self):

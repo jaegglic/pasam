@@ -61,9 +61,9 @@ sampler_ratio_20 = ps.GantryDominant2D(lattice=lattice, ratio=2.0)
 # Compute conditioning maps with and without refinement
 file_cond = os.path.join(_LOC_DIR, 'data', 'restrictions_50x25.txt')
 conditions = [file_cond]
-cond_map_raw = sampler_ratio_10.cond_map(conditions, inspect=False)
-cond_map_ref_10 = sampler_ratio_10.cond_map(conditions, inspect=True)
-cond_map_ref_20 = sampler_ratio_20.cond_map(conditions, inspect=True)
+cond_map_raw = sampler_ratio_10.compute_condition_map(conditions, validate=False)
+cond_map_ref_10 = sampler_ratio_10.compute_condition_map(conditions, validate=True)
+cond_map_ref_20 = sampler_ratio_20.compute_condition_map(conditions, validate=True)
 
 # Plot the Result
 nnodes_dim = lattice.nnodes_dim

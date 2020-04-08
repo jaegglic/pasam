@@ -101,21 +101,21 @@ def within_conical_opening(center, distance, ratio, points):
     """Indicates whether the points are within (``True``) or outside
     (``False``) of a conical opening.
 
-    An example of a conical (symmetric) opening::
+    An example of a conical (symmetric) opening with distributed points::
 
                       center
-                         *                   ---
-                        / \                   |
-                       /   \                  |
-                      /     \                 | distance
-                     /       \                |
-                    /         \               |
-                   /___________\             ---
+                         *                 ---
+                        / \                 |
+                       /   \                |
+                      /     \            distance
+                     /       \              |
+                    /         \             |
+                   /___________\           ---
 
-                  |-------------|            distance * ratio
+                  |-------------|        distance * ratio
 
-             *---------*----*--------*       points
-
+             *---------*----*--------*   points
+             |         |    |        |
           [False,    True, True,   False]    return
 
     where `distance` is the height of the triangle, the opening is the

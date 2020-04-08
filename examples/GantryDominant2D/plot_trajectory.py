@@ -74,7 +74,7 @@ sampler.set_prior_prob(prior_energy, energy=True)
 # Set and check validity of prior conditioning
 file_cond = os.path.join(_LOC_DIR, 'data', 'restrictions_180x90.txt')
 conditions = [file_cond]
-sampler.set_prior_cond(conditions, inspect=True)
+sampler.set_prior_cond(conditions, validate=True)
 
 # Sample Trajectory
 trajectory = sampler()

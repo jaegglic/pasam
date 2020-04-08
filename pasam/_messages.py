@@ -88,3 +88,8 @@ def err3002(shape, dim):
 err3003 = f'ERR3003 ' \
           f'The ratio is too small; consider adapting the ratio or ' \
           f'spacing of the grid nodes (c.f. docstring of `_check_ratio`).'
+
+
+def err3004(cond):
+    return f'ERR3004 ' \
+           f'Unknown conditioning {cond}'

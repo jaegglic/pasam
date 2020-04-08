@@ -38,14 +38,15 @@ class Sampler(abc.ABC):
         self._prior_cond = LatticeMap(lattice, ones, dtype=bool)
 
     @abc.abstractmethod
-    def __call__(self, conditions=None, inspect=False, seed=None):
+    def __call__(self, conditions=None, validate=False, seed=None):
         """Executes the sampling algorithm and produces a possible trajectory.
 
         Args:
             conditions (list, optional): Set of conditions of either strings
                that indicate the path of a conditioning file or array_like
                objects that represent conditioning points.
-            inspect (bool, optional): Inspect/transform the given conditioning.
+            validate (bool, optional): Inspect the given conditioning with
+                respect to the sampler settings and if necessary correct it.
             seed (int, optional): Seed used by the random procedure.
 
         Returns:
@@ -71,12 +72,13 @@ class Sampler(abc.ABC):
         return self._prior_prob
 
     @abc.abstractmethod
-    def set_prior_cond(self, conditions=None, inspect=False) -> None:
-        """Sets the prior conditioning map used in the sampling algorithm.
+    def set_prior_cond(self, conditions=None, validate=False) -> None:
+        """Sets the prior conditioning map.
 
         Args:
             conditions (list, optional): Set of conditions.
-            inspect (bool, optional): Inspect/transform the given conditioning.
+            validate (bool, optional): Inspect the given conditioning with
+                respect to the sampler settings and if necessary correct it.
 
         Returns:
             None
@@ -84,7 +86,7 @@ class Sampler(abc.ABC):
 
     @abc.abstractmethod
     def set_prior_prob(self, map_: LatticeMap, energy: bool = False) -> None:
-        """Set's the prior probability map used in the sampling algorithm.
+        """Set's the prior probability map.
 
         Args:
             map_ (LatticeMap): Prior probability or energy map.
@@ -100,7 +102,7 @@ class GantryDominant2D(Sampler):
     """`GantryDominant2D` is a 2D gantry dominated trajectory movement sampler.
     """
 
-    def __call__(self, conditions=None, inspect=False, seed=None):
+    def __call__(self, conditions=None, validate=False, seed=None):
         # Set the random seed for reproducibility
         np.random.seed(seed)
 
@@ -108,7 +110,7 @@ class GantryDominant2D(Sampler):
         if not conditions:
             conditions = []
         conditions.append(self._prior_cond)
-        cond_map = self.cond_map(conditions, inspect)
+        cond_map = self.compute_condition_map(conditions, validate)
 
         # Sample path and generate a `Trajectory` object
         points = self._sample_trajectory_points(cond_map)
@@ -135,55 +137,95 @@ class GantryDominant2D(Sampler):
         return self.__repr__()
 
     # Public Methods
-    # TODO Refactor `cond_map`
-    def cond_map(self, conditions, inspect):
-        """Computes a lattice map representing the union of all conditions.
+    def compute_adjacency_graph(self):
+        """Computes and stores the adjacency graph of the sampler.
+
+        Not that we consider a directed graph where the edges always go from
+        the lower to the higher nodes such that the graph::
+
+                2---3
+               / \  |
+              /   \ |
+             /     \|
+            1---4---5
+
+        would give the adjacency matrix::
+
+              | 1   2   3   4   5
+            --|--------------------
+            1 |     *       *
+            2 |         *       *
+            3 |                 *
+            4 |                 *
+            5 |
+
+        In this matrix, the rows represent 'arriving' and the columns
+        'departing' edges.
+        """
+        graph = self._adjacency_graph()
+        self._graph = graph
+
+    def compute_condition_map(self, conditions=None, validate=False):
+        """Computes a lattice map representing the union of a set of
+        conditions.
 
         Args:
             conditions (list, optional): Set of conditions of either strings
-               that indicate the path of a conditioning file or array_like
-               objects that represent conditioning points.
-            inspect (bool, optional): Inspect/transform the given conditioning.
+               (that indicate the path of a conditioning file), array_like
+               objects (that represent conditioning points), or conditioning
+               lattice maps.
+            validate (bool, optional): Inspect the given conditioning with
+                respect to the sampler settings and if necessary correct it.
 
         Returns:
             LatticeMap: Conditioning map.
         """
+        if not conditions:
+            ones = np.ones(self._lattice.nnodes_dim, dtype=bool)
+            return LatticeMap(self._lattice, ones)
 
-        if conditions:
-            # Iteratively load all the different conditioning maps
-            cond_maps = []
-            for cond in conditions:
-                if isinstance(cond, str):
-                    file = cond
-                    cond_map = self._cond_map_from_str(file)
-                elif isinstance(cond, LatticeMap):
-                    cond_map = cond
-                else:
-                    components = np.asarray(cond)
-                    cond_map = self._cond_map_from_point(components)
-                cond_maps.append(cond_map)
+        # Iteratively transform all conditions into lattice maps
+        cond_maps = []
+        for cond in conditions:
+            if isinstance(cond, str):               # conditioning FILE
+                file = cond
+                cond_map = self._cond_map_from_str(file)
+            elif isinstance(cond, LatticeMap):      # conditioning MAP
+                cond_map = cond
+            elif len(cond) == self._lattice.ndim:   # conditioning POINT
+                components = np.asarray(cond)
+                cond_map = self._cond_map_from_point(components)
+            else:
+                raise ValueError(msg.err3004(cond))
+            cond_maps.append(cond_map)
 
-            # Multiply through the set of conditioning maps
-            map_ = functools.reduce(lambda a, b: a * b, cond_maps)
+        # Reduce set of conditioning by multplication of all maps
+        map_ = functools.reduce(lambda a, b: a * b, cond_maps)
 
-            # Check/transform to a valid conditioning
-            if inspect:
-                values = self._validate_cond_values(map_.values)
-                map_.values = values
-        else:
-            values = np.ones(self._lattice.nnodes_dim, dtype=bool)
-            map_ = LatticeMap(self._lattice, values)
+        # Validate final conditioning map
+        if validate:
+            values = self._validate_cond_values(map_.values)
+            map_.values = values
+
         return map_
 
-    # TODO Refactor `set_acjacency_graph`
-    def set_adjacency_graph(self):
-        """Computes and stores the adjacency graph of the sampler."""
-        self._graph = self._adjacency_graph()
+    def set_prior_cond(self, conditions=None, validate=False):
+        """Sets the prior conditioning attribute of the sampler with the
+        possibility to validate it.
 
-    # TODO Refactor `set_prior_cond`
-    def set_prior_cond(self, conditions=None, inspect=False):
+        Args:
+            conditions (list, optional): Set of conditions of either strings
+               (that indicate the path of a conditioning file), array_like
+               objects (that represent conditioning points), or conditioning
+               lattice maps.
+            validate (bool, optional): Inspect the given conditioning with
+                respect to the sampler settings and if necessary correct it.
+
+        Returns:
+            None
+        """
         # Get conditioning map
-        map_ = self.cond_map(conditions, inspect)
+        map_ = self.compute_condition_map(conditions, validate)
 
         # Minor consistency check
         if self._lattice != map_.lattice:
@@ -192,8 +234,25 @@ class GantryDominant2D(Sampler):
         # Set value within self
         self._prior_cond = map_
 
-    # TODO Refactor `set_prior_prob`
     def set_prior_prob(self, map_, energy=False):
+        """Sets the prior probability attribute of the sampler.
+
+        It is possible to provide prior probability values (`energy=False`) or
+        probability energy values (`energy=True`). In the latter case, the
+        values are transformed to un-normalized probability measures by::
+
+            prior_prob.values = exp(-map_.values)
+
+        where `exp` denotes the exponential function.
+
+        Args:
+            map_ (LatticeMap): Prior map
+            energy (bool): Indicates if the prior map represents probability
+                values (false) or probability energy (true).
+
+        Returns:
+            None
+        """
         # Minor consistency checks
         if self._lattice != map_.lattice:
             raise ValueError(msg.err3000(self._lattice, map_.lattice))
@@ -207,13 +266,15 @@ class GantryDominant2D(Sampler):
         self._prior_prob = map_
 
     # Private Methods
-    # TODO Refactor `_adjacency_graph`
     def _adjacency_graph(self):
         """Computes an adjacency graph based on a computational lattice.
 
         The entry (i, j) of the graph matrix is non-zero if there is a
-        connection starting from node i and joining j. The linear indices i, j
-        are ordered according to the order specified in `_settings`.
+        connection starting from node i and joining j. For more information see
+        docstring of :meth:`compute_adjacency_graph`.
+
+        Returns
+            ndarray: Matrix representing the directed graph
         """
         # Gantry/Table nodes
         lattice = self._lattice
@@ -353,7 +414,7 @@ class GantryDominant2D(Sampler):
 
         values = np.array(values, dtype=bool, copy=True).ravel(order=NP_ORDER)
         if not self._graph:
-            self.set_adjacency_graph()
+            self.compute_adjacency_graph()
         graph = np.array(self._graph, copy=True)
 
         # Initialize set of nodes to be checked
