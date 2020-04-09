@@ -14,7 +14,6 @@
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # Standard library
-import abc
 import reprlib
 import numbers
 # Third party requirements

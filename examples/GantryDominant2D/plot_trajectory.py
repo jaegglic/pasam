@@ -64,10 +64,12 @@ lattice = ps.Lattice(nodes)
 
 # Sampler
 ratio = 2.0
-sampler = ps.GantryDominant2D(lattice=lattice, ratio=ratio)
+sampler = ps.GantryDominant2D(lattice=lattice, ratio=ratio, order='max_random')
 
 # Set prior probability
-file_energy = os.path.join(_LOC_DIR, 'data', 'prior_energy_180x90.txt')
+# TODO remove comment here
+# file_energy = os.path.join(_LOC_DIR, 'data', 'prior_energy_180x90.txt')
+file_energy = os.path.join(_LOC_DIR, 'data', 'prior_energy_sin_180x90.txt')
 prior_energy = ps.readfile_latticemap(file_energy)
 sampler.set_prior_prob(prior_energy, energy=True)
 
@@ -77,7 +79,9 @@ conditions = [file_cond]
 sampler.set_prior_cond(conditions, validate=True)
 
 # Sample Trajectory
-trajectory = sampler()
+# TODO remove seed
+# TODO remove control figures in folder examples\figures
+trajectory = sampler(seed=154586)
 
 # Plot the Result
 map_ = sampler.prior_cond * sampler.prior_prob

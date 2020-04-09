@@ -93,3 +93,8 @@ err3003 = f'ERR3003 ' \
 def err3004(cond):
     return f'ERR3004 ' \
            f'Unknown conditioning {cond}'
+
+
+def err3005(order):
+    return f"ERR3005 " \
+           f"Unknown sampling order '{order}'"

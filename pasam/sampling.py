@@ -14,11 +14,16 @@
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # Standard library
+import abc
+import reprlib
 import functools
 # Third party requirements
+import numpy as np
 # Local imports
-from pasam._settings import DIM_GANTRY, DIM_TABLE
-from pasam.lattice import *
+import pasam._messages as msg
+from pasam._settings import NP_ORDER, RLIB_MAXLIST, DIM_GANTRY, DIM_TABLE
+from pasam.lattice import Lattice, LatticeMap, readfile_nodes_values
+import pasam.utils as utl
 
 # Constants
 _rlib = reprlib.Repr()
@@ -28,11 +33,20 @@ _rlib.maxlist = RLIB_MAXLIST
 # Sampling Algorithm
 class Sampler(abc.ABC):
     """Base class for sampling algorithms.
+
+    Args
+        lattice (Lattice or list of array_like): Object defining the
+            computational lattice.
     """
 
     @abc.abstractmethod
-    def __init__(self, lattice: Lattice):
+    def __init__(self, lattice):
+        # Also accept objects that can be used to generate a lattice
+        if not isinstance(lattice, Lattice):
+            lattice = Lattice(lattice)
         self._lattice = lattice
+
+        # Make default prior maps (all equal probability, all allowed)
         ones = np.ones(lattice.nnodes_dim)
         self._prior_prob = LatticeMap(lattice, ones, dtype=int)
         self._prior_cond = LatticeMap(lattice, ones, dtype=bool)
@@ -99,7 +113,85 @@ class Sampler(abc.ABC):
 
 
 class GantryDominant2D(Sampler):
-    """`GantryDominant2D` is a 2D gantry dominated trajectory movement sampler.
+    """`GantryDominant2D` is a 2D gantry dominated trajectory sampler.
+
+    It is designed to sample trajectories in two-dimensional domains as e.g.::
+
+                --------------------------------------
+                |            ****        0000000000  |
+                | ***      **    *       0000000000  |
+                **   ******       *        000000    |
+                |                  *         00      |
+      DIM_TABLE |      00           *                |
+                |    000000          *****        **** Trajectory
+                |  0000000000             ***  ***   |
+                |  0000000000                **      |
+                --------------------------------------
+                             DIM_GANTRY
+
+    where the zeros indicate prior conditioning. The trajectories are guided
+    by a prior probability map describing higher and lower passage frequencies.
+
+    Notes
+        If the ratio is too small, the trajectory can not jump to upper or
+        lower neighbors but only straight right (or left). Consider the
+        following setup::
+
+                     ________________________________
+                    |       |       |       |       |
+                    |       |   B   |   E   |   H   |
+                    |_______|_______|_______|_______|
+                    |       |       |       |       |
+         DIM_TABLE  |   A   |   C   |   F   |   I   |
+                    |_______|_______|_______|_______|
+                    |       |       |       |       |
+                    |       |   D   |   G   |   J   |
+                    |_______|_______|_______|_______|
+
+                              DIM_GANTRY
+
+        where the nodes are chosen to have horizontal and vertical spread of
+        1.0. Let us fix a ratio value of 0.5. This means that when moving from
+        the first row to the second (distance=1.0) the trajectory is free to
+        move up or down anything between +0.5 and -0.5 (distance*ratio = 0.5).
+        We observe that in this case, it is not possible to jump from A to B or
+        D, because the vertical difference is 1.0 which is higher than 0.5.
+        Therefore, from A it is only possible to move to C.
+
+        Considering the spread across two rows (distance=2.0), we have a
+        vertical freedom of 1.0. This would technically allow to
+        start at A and end on E. However, due to the discretization of the grid
+        it would request to go the path A-C-E or A-B-E what would violate at
+        least once the maximum ratio of 0.5.
+
+        In such cases it is better to adapt the grid and design it more
+        according to the desired ratio as e.g::
+
+                     ________________________________
+                    |               |               |
+                    |               |       B       |
+                    |_______________|_______________|
+                    |               |               |
+                    |       A       |       C       |
+                    |_______________|_______________|
+                    |               |               |
+                    |               |       D       |
+                    |_______________|_______________|
+
+        In the latter setup we can keep a ratio of 0.5 and it would be allowed
+        to jump from A to B or from A to D.
+
+    Args
+        lattice (Lattice or list of array_like): Object defining the
+            computational lattice.
+        ratio (float): Ratio describing the agility of the table with respect
+            to the gantry.
+        order (str {'random', 'max_val', 'max_random'}, optional): Order in
+            which the trajectory points are sampled. 'random' randomly selects
+            one gantry position after the other. 'max_val' treats the gantry
+            positions according to the maximum value in the prior probability
+            map. 'max_random' samples positions according to their maximum
+            value in the prior probability map.
     """
 
     def __call__(self, conditions=None, validate=False, seed=None):
@@ -118,14 +210,17 @@ class GantryDominant2D(Sampler):
 
         return trajectory
 
-    def __init__(self, lattice, ratio=1.0):
+    def __init__(self, lattice, ratio=1.0, order='random'):
         # Check the ratio with respect to the lattice, for more information
         # consult the docstring in :meth:`_check_ratio`
-        self._check_ratio(lattice, ratio)
+        self._validate_ratio(lattice, ratio)
 
         # Initialize the values
         super().__init__(lattice)
         self._ratio = ratio
+        if order not in ['random', 'max_val', 'max_random']:
+            raise ValueError(msg.err3005(order))
+        self._order = order
         self._graph = None
 
     def __repr__(self):
@@ -204,8 +299,7 @@ class GantryDominant2D(Sampler):
 
         # Validate final conditioning map
         if validate:
-            values = self._validate_cond_values(map_.values)
-            map_.values = values
+            self._validate_conditioning(map_)
 
         return map_
 
@@ -305,87 +399,48 @@ class GantryDominant2D(Sampler):
 
         return graph
 
-    # TODO Refactor `_check_ratio`
-    @staticmethod
-    def _check_ratio(lattice, ratio):
-        """If the ratio is too small, the trajectory can not jump to upper or
-        lower neighbors but only straight right (or left) one::
-
-                     ________________________________
-                    |       |       |       |       |
-                    |       |   B   |   E   |   H   |
-                    |_______|_______|_______|_______|
-                    |       |       |       |       |
-         DIM_TABLE  |   A   |   C   |   F   |   I   |
-                    |_______|_______|_______|_______|
-                    |       |       |       |       |
-                    |       |   D   |   G   |   J   |
-                    |_______|_______|_______|_______|
-
-                              DIM_GANTRY
-
-        If the nodes have horizontal and vertical spread of 1.0 and the ratio
-        is 0.5 we see that it is not possible to jump from A to B or D but only
-        to C. But also to jump from A to C to E is not very meaningful because
-        it would mean that between C and E we have a virtual ratio of 1.0. In
-        these cases it is better to adapt the node spreading to the ratio and
-        take a lattice such that::
-
-                     ________________________________
-                    |               |               |
-                    |               |       B       |
-                    |_______________|_______________|
-                    |               |               |
-                    |       A       |       C       |
-                    |_______________|_______________|
-                    |               |               |
-                    |               |       D       |
-                    |_______________|_______________|
-
-        and then still take a ratio of 0.5. In the latter setup it would
-        perfectly be fine to jump from A to B or from A to D.
-        """
-        # TODO write this issue in the documentation
-        nodes = lattice.nodes
-        spacing_gantry = nodes[DIM_GANTRY][1:] - nodes[DIM_GANTRY][:-1]
-        spacing_table = nodes[DIM_TABLE][1:] - nodes[DIM_TABLE][:-1]
-
-        ratio_min = np.max(spacing_table) / np.min(spacing_gantry)
-        if ratio < ratio_min:
-            raise ValueError(msg.err3003)
-
-    # TODO Refactor `_cond_map_from_point`
     def _cond_map_from_point(self, components):
+        """Generate a conditioning lattice map from a conditioning point."""
         # Initialization
-        lattice = self._lattice
-        if components is None:
-            return np.ones(lattice.nnodes_dim, dtype=bool)
-        nodes = lattice.nodes
-        dim = (lattice.nnodes_dim[DIM_GANTRY], lattice.nnodes_dim[DIM_TABLE])
+        nodes = self._lattice.nodes
+        nnodes_dim = self._lattice.nnodes_dim
+
+        # Generate array with lowest dimension corresponding to the gantry
+        dim = (nnodes_dim[DIM_GANTRY], nnodes_dim[DIM_TABLE])
         values = np.zeros(dim, dtype=bool)
 
         # Conical opening for the permitted area of the trajectory
-        cntr = components[DIM_TABLE]
-        ratio = 2 * self._ratio  # The opening is symmetric
+        center = components[DIM_TABLE]
+        con_rat = 2 * self._ratio  # The conical opening is symmetric
         pts = nodes[DIM_TABLE]
 
         # Loop in gantry direction through the lattice
         for inode, node in enumerate(nodes[DIM_GANTRY]):
             dist = abs(node - components[DIM_GANTRY])
-            allowed = utl.within_conical_opening(cntr, dist, ratio, pts)
+            allowed = utl.within_conical_opening(center, dist, con_rat, pts)
             values[inode, allowed] = True
 
         # Correct dimension ordering if needed
         if DIM_GANTRY > DIM_TABLE:
             values = values.transpose()
+        values = values.ravel(order=NP_ORDER)
 
-        return LatticeMap(lattice, values.ravel(order=NP_ORDER))
+        return LatticeMap(self._lattice, values)
 
-    # TODO Refactor `_cond_map_from_str`
     def _cond_map_from_str(self, file):
-        # Read the conditioning file and invert the values
-        nodes, vals = readfile_nodes_values(file)
-        values = utl.ams_val_map_to_bool_map(vals)  # !! Values are inverted !!
+        """Loads a conditioning map from a saved file.
+
+        !!! ATTENTION !!!
+        This map invertes the values. AMS is used to indicate blocked nodes
+        by `1` and allowed nodes by `0`. However, for the sampling it is more
+        convenient to use it the other way around. Therefore, the values are
+        inverted withing this function.
+        """
+        # Read the conditioning file
+        nodes, values = readfile_nodes_values(file)
+
+        # Invert the values (c.f. docstring)
+        values = utl.ams_val_map_to_bool_map(values)
 
         # Check consistency of the lattices
         if Lattice(nodes) != self._lattice:
@@ -393,61 +448,144 @@ class GantryDominant2D(Sampler):
 
         return LatticeMap(nodes, values)
 
-    # TODO Refactor `_linear_indices`
     def _linear_indices(self):
-        """Returns the two dimensional array of the linear indices where the
-        lower dimension always considers the GANTRY dimension."""
+        """Returns the two dimensional array of the linear indices. The lower
+        dimension of the produced array always considers the GANTRY dimension.
+
+        The setting (DIM_GANTRY < DIM_TABLE and NP_ORDER='F') then produces the
+        same outcome as (DIM_GANTRY > DIM_TABLE and NP_ORDER='C') because in
+        both cases, the linear counter first considers (and increases) along
+        the gantry dimension.
+
+        Similar reasoning goes for the two settings (DIM_GANTRY > DIM_TABLE and
+        NP_ORDER='F') and (DIM_GANTRY < DIM_TABLE and NP_ORDER='C') because the
+        linear counter first considers (and increases) along the table
+        dimension.
+        """
         nnodes_dim = self._lattice.nnodes_dim
         nnodes = self._lattice.nnodes
         lin_ind = np.arange(nnodes).reshape(nnodes_dim, order=NP_ORDER)
 
+        # As mentioned in the docstring, lower dimension corresponds to gantry
         if DIM_GANTRY > DIM_TABLE:
             lin_ind = lin_ind.transpose()
 
-        return np.asarray(lin_ind, dtype='int32')
+        return lin_ind
 
-    # TODO Refactor `_validate_cond_values`
-    # TODO maybe rename it into `_valide_condition_array`
-    def _validate_cond_values(self, values):
-        """Returns a valid condition array respecting graph connectivity and
-        restrictions from a set of values."""
+    def _sampling_positions(self):
+        """This method is used to define the order in which the trajectory
+        points are sampled.
 
-        values = np.array(values, dtype=bool, copy=True).ravel(order=NP_ORDER)
+        There are the following possibilities:
+            - 'random': Randomly choose positions indices,
+            - 'max_val': For each position, compute the maximum value in the
+                prior probability map (i.e. np.max(..., axis=DIM_TABLE) and
+                sort positions indices accordingly in descending order,
+            - 'max_random': As above, but rather than ordering, we sample
+               position indices according to these values.
+
+        Returns:
+            ndarray: Position indices.
+        """
+        order = self._order
+        lattice = self._lattice
+
+        def _max_vals():
+            """Computing the maximum probability values in table direction.
+            """
+            values = (self._prior_prob * self.prior_cond).values
+            values = values.reshape(lattice.nnodes_dim, order=NP_ORDER)
+            return np.max(values, axis=DIM_TABLE)
+
+        if order == 'random':
+            pos = np.arange(lattice.nnodes_dim[DIM_GANTRY])
+            np.random.shuffle(pos)
+
+        elif order == 'max_val':
+            pos = np.argsort(_max_vals())[::-1]
+
+        elif order == 'max_random':
+            prob = _max_vals()
+            prob /= np.sum(prob)
+
+            npos = lattice.nnodes_dim[DIM_GANTRY]
+            pos = np.arange(npos)
+            pos = np.random.choice(pos, size=npos, replace=False, p=prob)
+        else:
+            raise ValueError(msg.err3005(order))
+
+        return pos
+
+    def _validate_conditioning(self, map_):
+        """Checks if a given conditioning map is valid with respect to the
+        sampler settings.
+
+        For doing so, we check if each node is potentially reachable by a
+        trajectory that goes through the entire gantry range. If not, the node
+        is set to be 'blocked'.
+
+        Args:
+            map_ (LatticeMap): Conditioning map
+        """
+        # The validity of the conditioning us checked by using an adjacency
+        # graph to see if all nodes can be reached f
         if not self._graph:
             self.compute_adjacency_graph()
         graph = np.array(self._graph, copy=True)
+
+        # Make the changes to an shallow copy of map_.values
+        values = map_.values
 
         # Initialize set of nodes to be checked
         inodes_control = set(np.where(np.logical_not(values))[0])
 
         # Boundary nodes
         lin_ind = self._linear_indices()
-        no_outgoing = lin_ind[-1, :]
-        no_incoming = lin_ind[0, :]
+        no_out = lin_ind[-1, :]     # boundary nodes with no outgoing edges
+        no_in = lin_ind[0, :]       # boundary nodes with no incoming edges
 
         # Loop until there is no potential issue anymore
         while len(inodes_control) > 0:
+            # Pop next node index to be checked
             inode = inodes_control.pop()
 
+            # Get incoming and outgoing edges for the given node index `inode`
             outgoing = np.where(graph[inode, :])[0]
             incoming = np.where(graph[:, inode])[0]
 
-            # Remove node if there is no path passing through it
-            outgoing_issue = len(outgoing) == 0 and inode not in no_outgoing
-            incoming_issue = len(incoming) == 0 and inode not in no_incoming
-            if not values[inode] or outgoing_issue or incoming_issue:
+            # Block node if there is no path passing through it
+            issue_out = len(outgoing) == 0 and inode not in no_out
+            issue_in = len(incoming) == 0 and inode not in no_in
+            if not values[inode] or issue_out or issue_in:
+                # Block the specific node
+                values[inode] = False
+
                 # Remove node edges from graph
                 graph[inode, :] = False
                 graph[:, inode] = False
 
-                # Add the modified nodes to the list to be checked
+                # Add the modified nodes to the control set
                 inodes_control = inodes_control.union(outgoing)
                 inodes_control = inodes_control.union(incoming)
 
-                # Make it unpermitted
-                values[inode] = False
+    @staticmethod
+    def _validate_ratio(lattice, ratio):
+        """Checks if the ratio corresponds well with the lattice definitions.
+        For mor information see the docstring of this class. The ratio can be
+        interpreted as:
 
-        return values
+            ratio = d_table / d_gantry.
+
+        In this function we test if the given ratio is sufficient to make
+        the largest table gap when facing the smallest gantry gap.
+        """
+        nodes = lattice.nodes
+        spacing_gantry = nodes[DIM_GANTRY][1:] - nodes[DIM_GANTRY][:-1]
+        spacing_table = nodes[DIM_TABLE][1:] - nodes[DIM_TABLE][:-1]
+
+        ratio_max = np.max(spacing_table) / np.min(spacing_gantry)
+        if ratio < ratio_max:
+            raise ValueError(msg.err3003)
 
     # TODO Refactor `_sample_trajectory_points`
     def _sample_trajectory_points(self, perm_map):
@@ -455,22 +593,26 @@ class GantryDominant2D(Sampler):
         ndim = lattice.ndim
         ntraj = lattice.nnodes_dim[DIM_GANTRY]
         traj_points = np.array([None for _ in range(ntraj)])
-        ind_to_do = np.array([True for _ in range(ntraj)], dtype='bool')
 
-        gantry_ind = np.arange(len(ind_to_do))
+        sampling_order = self._sampling_positions()
+
+        # ind_to_do = np.array([True for _ in range(ntraj)], dtype='bool')
+
+        # gantry_ind = np.arange(len(ind_to_do))
         rem_nodes = [n for i, n in enumerate(lattice.nodes)
                      if i != DIM_GANTRY]
         rem_nodes = utl.cartesian_product(*rem_nodes)
-        while np.any(ind_to_do):
-            ind_gantry_pos = np.random.choice(gantry_ind[ind_to_do])
+        # while np.any(ind_to_do):
+        for position in sampling_order:
+            # position = np.random.choice(gantry_ind[ind_to_do])
 
-            prior_slice = self._prior_prob.slice(DIM_GANTRY, ind_gantry_pos)
-            perm_slice = perm_map.slice(DIM_GANTRY, ind_gantry_pos)
+            prior_slice = self._prior_prob.slice(DIM_GANTRY, position)
+            perm_slice = perm_map.slice(DIM_GANTRY, position)
 
             # import matplotlib.pyplot as plt
             # plt.imshow(np.reshape((self._prior_prob * perm_map).values, (180, 90),
             #                       order='F').transpose(), origin='lower')
-            # plt.plot([ind_gantry_pos,]*2, [0, 89], 'r--')
+            # plt.plot([position,]*2, [0, 89], 'r--')
             # plt.show()
 
             if np.sum(perm_slice.values) >= 1:
@@ -497,15 +639,15 @@ class GantryDominant2D(Sampler):
             pos_slice = rem_nodes[ind]
 
             traj_point = np.array([None,] * ndim)
-            traj_point[DIM_GANTRY] = lattice.nodes[DIM_GANTRY][ind_gantry_pos]
+            traj_point[DIM_GANTRY] = lattice.nodes[DIM_GANTRY][position]
             traj_point[[i for i in range(ndim) if i != DIM_GANTRY]] = pos_slice
 
             components = tuple(traj_point)
             cond_map = self._cond_map_from_point(components)
             perm_map *= cond_map
 
-            traj_points[ind_gantry_pos] = traj_point
-            ind_to_do[ind_gantry_pos] = False
+            traj_points[position] = traj_point
+            # ind_to_do[position] = False
         return traj_points
 
 
