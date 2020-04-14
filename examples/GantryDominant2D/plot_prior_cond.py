@@ -71,7 +71,7 @@ values_raw_10 = np.reshape(cond_map_raw.values, nnodes_dim, order='F')
 values_ref_10 = np.reshape(cond_map_ref_10.values, nnodes_dim, order='F')
 values_ref_20 = np.reshape(cond_map_ref_20.values, nnodes_dim, order='F')
 
-_, ax = plt.subplots(3, 1, figsize=(5, 8))
+_, ax = plt.subplots(3, 1, figsize=(4, 8))
 min_x, max_x = nodes[0][0], nodes[0][-1]
 min_y, max_y = nodes[1][0], nodes[1][-1]
 im_args = {
@@ -101,3 +101,5 @@ ax[2].set_title('ratio = 2.0')
 file_fig = os.path.join(_LOC_DIR, 'figures', 'prior_cond.png')
 plt.savefig(file_fig)
 print(f'\nThe result is saved under {file_fig}')
+
+plt.show()

@@ -62,6 +62,9 @@ def err1005(ndim, ncomp):
 
 
 # Errors
+def err2000(file):
+    return f'ERR2000 ' \
+           f'Inconsistent trajectory file length in {file}.'
 
 
 # ------------------------------ 3XXX sampling --------------------------------

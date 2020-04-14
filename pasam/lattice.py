@@ -104,6 +104,30 @@ class Lattice:
                for nodes, comp in zip(self.nodes, components)]
         return tuple(ind)
 
+    def linear_index_from_point(self, components):
+        """Returns the linear index for the nearest node in the grid.
+
+        Args:
+            components (array_like, shape=(n,)): Components of point.
+
+        Returns:
+            int: Linear index of closest node.
+        """
+        linear_indices = self.linear_indices()
+        ind = self.indices_from_point(components)
+        return linear_indices[ind]
+
+    def linear_indices(self):
+        """Returns the array of linear indices.
+
+        The array has the shape self.nnodes_dim
+
+        Returns:
+            ndarray, shape=self.nnodes_dim: Linear indices.
+        """
+        linear_indices = np.arange(self.nnodes)
+        return linear_indices.reshape(self.nnodes_dim, order=NP_ORDER)
+
     @property
     def ndim(self):
         """The dimensionality of the lattice.
@@ -163,7 +187,7 @@ class LatticeMap:
             computational lattice.
         values (array_like, shape=(n,)): Map values associated to the lattice
             nodes.
-        dtype (data-type, optional): The desired data-type for the map_values.
+        dtype (data-type, optional): The desired data-type for the map values.
             If not given, then the type will be determined as the minimum
             requirement by `numpy`.
 
@@ -291,6 +315,22 @@ class LatticeMap:
             LatticeMap: Lattice map from file.
         """
         return readfile_latticemap(file)
+
+    def normalized(self, axis=None):
+        # TODO refactor this
+        # TODO unit-test this!!!
+        values = np.copy(self.values)
+        if not axis:
+            values /= np.sum(values)
+        else:
+            nnodes_dim = self.lattice.nnodes_dim
+            values = values.reshape(nnodes_dim, order=NP_ORDER)
+            norm = np.sum(values, axis=axis)
+            newshape = list(nnodes_dim)
+            newshape[axis] = 1
+            values /= np.reshape(norm, newshape=newshape)
+            values = values.ravel(order=NP_ORDER)
+        return self.__class__(self.lattice, values)
 
 
 # Methods

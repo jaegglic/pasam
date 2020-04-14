@@ -90,10 +90,12 @@ values = np.reshape(map_.values, lattice.nnodes_dim, order='F')
 _, ax = plt.subplots()
 min_x, max_x = nodes[0][0], nodes[0][-1]
 min_y, max_y = nodes[1][0], nodes[1][-1]
-ax.imshow(values.transpose(),
-          origin='lower',
-          cmap='viridis',
-          extent=[min_x, max_x, min_y, max_y])
+im_args = {
+    'origin':   'lower',
+    'cmap':     'viridis',
+    'extent':   [min_x, max_x, min_y, max_y],
+}
+ax.imshow(values.transpose(), **im_args)
 ax.set(xticks=np.arange(min_x, max_x+1, (max_x - min_x)//2),
        yticks=np.arange(min_y, max_y+1, (max_y - min_y)//2))
 ax.plot(*np.array(trajectory.points).transpose(), 'r')

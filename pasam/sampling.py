@@ -198,17 +198,10 @@ class GantryDominant2D(Sampler):
         # Set the random seed for reproducibility
         np.random.seed(seed)
 
-        # Combine the `conditions` with the prior conditioning
-        if not conditions:
-            conditions = []
-        conditions.append(self._prior_cond)
-        cond_map = self.compute_condition_map(conditions, validate)
-
         # Sample path and generate a `Trajectory` object
-        points = self._sample_trajectory_points(cond_map)
-        trajectory = Trajectory(points)
+        points = self._sample_trajectory_points(conditions, validate)
 
-        return trajectory
+        return Trajectory(points)
 
     def __init__(self, lattice, ratio=1.0, order='random'):
         # Check the ratio with respect to the lattice, for more information
@@ -304,8 +297,11 @@ class GantryDominant2D(Sampler):
         return map_
 
     def set_prior_cond(self, conditions=None, validate=False):
-        """Sets the prior conditioning attribute of the sampler with the
-        possibility to validate it.
+        """Sets the prior conditioning map of the sampler with the possibility
+        to validate it.
+
+        The prior probability map is updated whenever a new prior conditioning
+        map is set.
 
         Args:
             conditions (list, optional): Set of conditions of either strings
@@ -352,12 +348,12 @@ class GantryDominant2D(Sampler):
             raise ValueError(msg.err3000(self._lattice, map_.lattice))
 
         # If the map represents the energy, transform it to probability values
+        values = np.copy(map_.values)
         if energy:
-            values = np.exp(-map_.values)
-            map_ = LatticeMap(self._lattice, values)
+            values = np.exp(-values)
 
         # Set value within self
-        self._prior_prob = map_
+        self._prior_prob = LatticeMap(self._lattice, values)
 
     # Private Methods
     def _adjacency_graph(self):
@@ -462,15 +458,13 @@ class GantryDominant2D(Sampler):
         linear counter first considers (and increases) along the table
         dimension.
         """
-        nnodes_dim = self._lattice.nnodes_dim
-        nnodes = self._lattice.nnodes
-        lin_ind = np.arange(nnodes).reshape(nnodes_dim, order=NP_ORDER)
+        linear_indices = self._lattice.linear_indices()
 
         # As mentioned in the docstring, lower dimension corresponds to gantry
         if DIM_GANTRY > DIM_TABLE:
-            lin_ind = lin_ind.transpose()
+            linear_indices = linear_indices.transpose()
 
-        return lin_ind
+        return linear_indices
 
     def _sampling_positions(self):
         """This method is used to define the order in which the trajectory
@@ -588,11 +582,18 @@ class GantryDominant2D(Sampler):
             raise ValueError(msg.err3003)
 
     # TODO Refactor `_sample_trajectory_points`
-    def _sample_trajectory_points(self, perm_map):
+    def _sample_trajectory_points(self, conditions=None, validate=False):
+        # Initialization
         lattice = self._lattice
         ndim = lattice.ndim
         ntraj = lattice.nnodes_dim[DIM_GANTRY]
         traj_points = np.array([None for _ in range(ntraj)])
+
+        # Compute (and eventually validate) the complete condition map
+        if not conditions:
+            conditions = []
+        conditions.append(self.prior_cond)
+        cond_map = self.compute_condition_map(conditions, validate)
 
         sampling_order = self._sampling_positions()
 
@@ -607,10 +608,10 @@ class GantryDominant2D(Sampler):
             # position = np.random.choice(gantry_ind[ind_to_do])
 
             prior_slice = self._prior_prob.slice(DIM_GANTRY, position)
-            perm_slice = perm_map.slice(DIM_GANTRY, position)
+            perm_slice = cond_map.slice(DIM_GANTRY, position)
 
             # import matplotlib.pyplot as plt
-            # plt.imshow(np.reshape((self._prior_prob * perm_map).values, (180, 90),
+            # plt.imshow(np.reshape((self._prior_prob * cond_map).values, (180, 90),
             #                       order='F').transpose(), origin='lower')
             # plt.plot([position,]*2, [0, 89], 'r--')
             # plt.show()
@@ -628,7 +629,7 @@ class GantryDominant2D(Sampler):
             else:
                 # TODO also react to this situation
                 import matplotlib.pyplot as plt
-                plt.imshow(np.reshape((self._prior_prob * perm_map).values, (180, 90),
+                plt.imshow(np.reshape((self._prior_prob * cond_map).values, (180, 90),
                                       order='F').transpose(), origin='lower')
                 plt.show()
                 raise ValueError('TODO Error message for not possible settings '
@@ -643,8 +644,7 @@ class GantryDominant2D(Sampler):
             traj_point[[i for i in range(ndim) if i != DIM_GANTRY]] = pos_slice
 
             components = tuple(traj_point)
-            cond_map = self._cond_map_from_point(components)
-            perm_map *= cond_map
+            cond_map *= self._cond_map_from_point(components)
 
             traj_points[position] = traj_point
             # ind_to_do[position] = False
@@ -662,6 +662,10 @@ class Trajectory:
         points (list of tuple): Sequence of trajectory points.
 
     """
+    _TXT_SEP = '\t'
+
+    def __eq__(self, other):
+        return all([s == o for s, o in zip(self, other)])
 
     def __getitem__(self, key):
         return self.points[key]
@@ -683,14 +687,93 @@ class Trajectory:
     def __str__(self):
         return self.__repr__()
 
+    @classmethod
+    def from_txt(cls, file):
+        """Generates a trajectory object from .txt files.
+
+        The form of the text file must be as follows::
+
+            -------------------------
+            |  <len>                |
+            |  points[0]            |
+            |  points[1]            |
+            |     ...               |
+            |  points[n-1]          |
+            -------------------------
+
+        Args:
+            file (str or pathlib.Path): File or filename.
+
+        Returns:
+            Trajectory: Trajectory from file.
+        """
+        return cls._ams_read_trajectory_from_txt(file)
+
     def to_txt(self, file):
+        """Writes a trajectory to a text file.
+
+        The form of the text file is as follows::
+
+            -------------------------
+            |  <len>                |
+            |  points[0]            |
+            |  points[1]            |
+            |     ...               |
+            |  points[n-1]          |
+            -------------------------
+
+        Args:
+            file (str or pathlib.Path): File or filename.
+
+        Returns:
+            None
+        """
         self._ams_write_trajectory_to_txt(file, self.points)
 
-    @staticmethod
-    def _ams_write_trajectory_to_txt(fname, points):
+    def to_latticemap(self, lattice, dtype=None):
+        """Generates a boolean lattice map indicating the trajectory.
+
+        Args:
+            lattice (Lattice): Object defining the computational lattice.
+        dtype (data-type, optional): The desired data-type for the map values.
+            If not given, then the type will be determined as the minimum
+            requirement by `numpy`.
+
+        Returns:
+            LatticeMap: Boolean trajectory according to a lattice grid.
+        """
+        values = np.zeros(lattice.nnodes, dtype=bool)
+
+        # Make similar (closest node) computation iteratively for each point
+        for components in self:
+            linear_index = lattice.linear_index_from_point(components)
+            values[linear_index] = True
+
+        return LatticeMap(lattice, values, dtype=dtype)
+
+    @classmethod
+    def _ams_read_trajectory_from_txt(cls, file):
+        """Read a trajectory from a .txt file according to the AMS guidelines.
+        """
+
+        lines = utl.readlines_(file, remove_blank_lines=True)
+
+        # Number of points
+        npts = int(lines[0])
+        if npts != len(lines) - 1:
+            raise ValueError(msg.err2000(file))
+
+        # Iteratively read the lines and transform them to tuple of floats
+        points = []
+        for line in lines[1:]:
+            points.append(tuple(map(float, line.split(cls._TXT_SEP))))
+
+        return cls(points)
+
+    def _ams_write_trajectory_to_txt(self, file, points):
         """Write a trajectory to a txt file according to the AMS guidelines.
         """
-        with open(fname, 'w+') as tfile:
+        with open(file, 'w+') as tfile:
             tfile.write(f'{len(points)}\n')
             for pt in points:
-                tfile.write('\t'.join([f'{p}' for p in pt]) + '\n')
+                tfile.write(self._TXT_SEP.join([f'{p}' for p in pt]) + '\n')
