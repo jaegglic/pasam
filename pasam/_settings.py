@@ -15,3 +15,7 @@ NP_SEED = 46784316
 NP_ORDER = 'F'      # 'Fortran' reordering style (otherwise unit-tests fail)
 NP_ATOL = 1e-8      # Absolute tolerance as in `np.isclose`
 NP_RTOL = 1e-5      # Relative tolerance as in `np.isclose`
+
+# Logging
+LOG_FILE_NAME = '_pasam.log'
+LOG_MAP_NAME = '_sampling_map.log'

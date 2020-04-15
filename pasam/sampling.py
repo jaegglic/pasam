@@ -15,19 +15,26 @@
 
 # Standard library
 import abc
+import os
 import reprlib
 import functools
+import logging
 # Third party requirements
 import numpy as np
 # Local imports
 import pasam._messages as msg
 from pasam._settings import NP_ORDER, RLIB_MAXLIST, DIM_GANTRY, DIM_TABLE
+from pasam._settings import LOG_FILE_NAME, LOG_MAP_NAME
 from pasam.lattice import Lattice, LatticeMap, readfile_nodes_values
 import pasam.utils as utl
 
 # Constants
 _rlib = reprlib.Repr()
 _rlib.maxlist = RLIB_MAXLIST
+_LOC_PASAM = os.path.dirname(os.path.abspath(__file__))
+_LOC_FOLDER = os.path.join(_LOC_PASAM, '.log')
+_LOG_FILE = os.path.join(_LOC_FOLDER, LOG_FILE_NAME)
+logging.basicConfig(filename=_LOG_FILE, filemode='w', level=logging.DEBUG)
 
 
 # Sampling Algorithm
@@ -195,11 +202,16 @@ class GantryDominant2D(Sampler):
     """
 
     def __call__(self, conditions=None, validate=False, seed=None):
-        # Set the random seed for reproducibility
+        logging.info(f'Start Path Sampling')
+
+        # Set the random seed for reproducibility and write it to the logger
+        if seed is None:
+            seed = np.random.get_state()[1][0]
         np.random.seed(seed)
+        logging.info(f'Numpy seed is {seed}')
 
         # Sample path and generate a `Trajectory` object
-        points = self._sample_trajectory_points(conditions, validate)
+        points = self._compute_trajectory_points(conditions, validate)
 
         return Trajectory(points)
 
@@ -395,6 +407,72 @@ class GantryDominant2D(Sampler):
 
         return graph
 
+    # TODO Refactor `_sample_trajectory_points`
+    def _compute_trajectory_points(self, conditions=None, validate=False):
+        """Samples the trajectory points to generate a trajectory reaching
+        through the gantry dimension of the lattice.
+
+        Args:
+            conditions (list, optional): Set of conditions of either strings
+               (that indicate the path of a conditioning file), array_like
+               objects (that represent conditioning points), or conditioning
+               lattice maps.
+            validate (bool, optional): Inspect the given conditioning with
+                respect to the sampler settings and if necessary correct it.
+
+        Returns:
+            list of tuples: List of sampled points
+        """
+        # Initialization
+        nodes = self._lattice.nodes
+
+        # Compute (and eventually validate) the complete condition map
+        if not conditions:
+            conditions = []
+        conditions.append(self.prior_cond)
+        cond_map = self.compute_condition_map(conditions, validate)
+
+        # Cartesian product of the free nodes when DIM_GANTRY is fixed
+        free_nodes = [n for i, n in enumerate(nodes) if i != DIM_GANTRY]
+        lin_free_nodes = utl.cartesian_product(*free_nodes)
+
+        # Iteratively sample to points following a prescribed order
+        points = [None, ] * len(nodes[DIM_GANTRY])
+        for pos in self._sampling_position_order():
+
+            # Compute the distribution within the slice at position `pos`
+            prior_slice = self._prior_prob.slice(DIM_GANTRY, pos)
+            cond_slice = cond_map.slice(DIM_GANTRY, pos)
+            distribution = prior_slice * cond_slice
+
+            # Normalize the distribution values
+            try:
+                distribution = distribution.normalize_sum()
+            except (ValueError, TypeError) as e:
+                # Write logging file entry
+                logging.error(f'No possible path passage at pos={pos}')
+                # Save current permission map to a text file
+                map_ = self._prior_prob * cond_map
+                map_.to_txt(os.path.join(_LOC_FOLDER, LOG_MAP_NAME))
+                raise e
+
+            # Select trajectory point among the free nodes
+            ind = np.random.choice(len(lin_free_nodes), p=distribution.values)
+            pos_slice = lin_free_nodes[ind]
+
+            # Generate new trajectory point
+            ndim = self._lattice.ndim
+            new_point = np.zeros(ndim)
+            new_point[DIM_GANTRY] = nodes[DIM_GANTRY][pos]
+            new_point[[i for i in range(ndim) if i != DIM_GANTRY]] = pos_slice
+
+            # Update the restriction map by conditioning the new point
+            cond_map *= self._cond_map_from_point(new_point)
+
+            # Embed the new point into the trajectory
+            points[pos] = tuple(new_point)
+        return points
+
     def _cond_map_from_point(self, components):
         """Generate a conditioning lattice map from a conditioning point."""
         # Initialization
@@ -466,7 +544,7 @@ class GantryDominant2D(Sampler):
 
         return linear_indices
 
-    def _sampling_positions(self):
+    def _sampling_position_order(self):
         """This method is used to define the order in which the trajectory
         points are sampled.
 
@@ -580,75 +658,6 @@ class GantryDominant2D(Sampler):
         ratio_max = np.max(spacing_table) / np.min(spacing_gantry)
         if ratio < ratio_max:
             raise ValueError(msg.err3003)
-
-    # TODO Refactor `_sample_trajectory_points`
-    def _sample_trajectory_points(self, conditions=None, validate=False):
-        # Initialization
-        lattice = self._lattice
-        ndim = lattice.ndim
-        ntraj = lattice.nnodes_dim[DIM_GANTRY]
-        traj_points = np.array([None for _ in range(ntraj)])
-
-        # Compute (and eventually validate) the complete condition map
-        if not conditions:
-            conditions = []
-        conditions.append(self.prior_cond)
-        cond_map = self.compute_condition_map(conditions, validate)
-
-        sampling_order = self._sampling_positions()
-
-        # ind_to_do = np.array([True for _ in range(ntraj)], dtype='bool')
-
-        # gantry_ind = np.arange(len(ind_to_do))
-        rem_nodes = [n for i, n in enumerate(lattice.nodes)
-                     if i != DIM_GANTRY]
-        rem_nodes = utl.cartesian_product(*rem_nodes)
-        # while np.any(ind_to_do):
-        for position in sampling_order:
-            # position = np.random.choice(gantry_ind[ind_to_do])
-
-            prior_slice = self._prior_prob.slice(DIM_GANTRY, position)
-            perm_slice = cond_map.slice(DIM_GANTRY, position)
-
-            # import matplotlib.pyplot as plt
-            # plt.imshow(np.reshape((self._prior_prob * cond_map).values, (180, 90),
-            #                       order='F').transpose(), origin='lower')
-            # plt.plot([position,]*2, [0, 89], 'r--')
-            # plt.show()
-
-            if np.sum(perm_slice.values) >= 1:
-                distribution = (prior_slice * perm_slice).values
-                try:
-                    distribution = distribution / np.sum(distribution)
-                except (ZeroDivisionError, FloatingPointError,
-                        RuntimeWarning, RuntimeError):
-                    # TODO do something about that case!!
-                    raise ValueError('HERE WE SHOULD TAKE THE PERMITTED REGION WITHOUT'
-                                     'THE PRIOR DISTRIBUTION AND SAMPLE UNIFORMLY IN THERE')
-                distribution = distribution / np.sum(distribution)
-            else:
-                # TODO also react to this situation
-                import matplotlib.pyplot as plt
-                plt.imshow(np.reshape((self._prior_prob * cond_map).values, (180, 90),
-                                      order='F').transpose(), origin='lower')
-                plt.show()
-                raise ValueError('TODO Error message for not possible settings '
-                                 '(because there is no connected trajectory possible anymore)')
-
-            ind = np.random.choice(np.arange(len(distribution)),
-                                   p=distribution)
-            pos_slice = rem_nodes[ind]
-
-            traj_point = np.array([None,] * ndim)
-            traj_point[DIM_GANTRY] = lattice.nodes[DIM_GANTRY][position]
-            traj_point[[i for i in range(ndim) if i != DIM_GANTRY]] = pos_slice
-
-            components = tuple(traj_point)
-            cond_map *= self._cond_map_from_point(components)
-
-            traj_points[position] = traj_point
-            # ind_to_do[position] = False
-        return traj_points
 
 
 # Trajectory Object

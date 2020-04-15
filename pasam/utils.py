@@ -54,7 +54,7 @@ def ams_val_map_to_bool_map(vals):
     return values
 
 
-def cartesian_product(*args, order='F'):
+def cartesian_product(*args, order=NP_ORDER):
     """Cartesian product for a set of containers.
 
     Args:

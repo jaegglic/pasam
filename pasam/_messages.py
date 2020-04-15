@@ -57,6 +57,10 @@ def err1005(ndim, ncomp):
            f"(={ndim})."
 
 
+err1006 = f'ERR1006 Normalization is inappropriate ' \
+          f'because the values sum up to 0.'
+
+
 # ------------------------------ 2XXX trajectory ------------------------------
 # Warnings
 

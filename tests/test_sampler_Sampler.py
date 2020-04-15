@@ -231,7 +231,7 @@ class TestSampler(unittest.TestCase):
         # Computational lattice
         nodes = [
             [-4, -3, -2, -1, 0, 1, 2, 3, 4],
-            [0, 1, 2, 3, 4, 5, 6]
+            [0, 1, 2, 3, 4, 5, 6],
         ]
         lattice = Lattice(nodes)
 

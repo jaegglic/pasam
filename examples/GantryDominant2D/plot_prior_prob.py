@@ -105,7 +105,7 @@ ax[0].set(xticks=np.arange(min_x, max_x+1, (max_x - min_x)//2),
 ax[0].set_title('Energy')
 
 # Plot prior probability
-map_ = (sampler.prior_cond * sampler.prior_prob).normalized(axis=1)
+map_ = (sampler.prior_cond * sampler.prior_prob).normalize_sum(axis=1)
 values = np.reshape(map_.values, lattice.nnodes_dim, order='F')
 ax[1].imshow(values.transpose(), **im_args)
 ax[1].set(xticks=np.arange(min_x, max_x+1, (max_x - min_x)//2),

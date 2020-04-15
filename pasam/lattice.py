@@ -268,6 +268,21 @@ class LatticeMap:
     def __str__(self):
         return self.__repr__()
 
+    @classmethod
+    def from_txt(cls, file):
+        """Produces a lattice map object from a .txt file.
+
+        The structure of a latticemap text file is reported in the function
+        :meth:`readfile_latticemap`.
+
+        Args:
+            file (str or pathlib.Path): File or filename.
+
+        Returns:
+            LatticeMap: Lattice map from file.
+        """
+        return readfile_latticemap(file)
+
     def indices_from_point(self, components):
         """Returns the indices for the nearest node in the lattice.
 
@@ -278,6 +293,56 @@ class LatticeMap:
             tuple: Indices of closest node.
         """
         return self.lattice.indices_from_point(components)
+
+    @property
+    def ndim(self):
+        """The dimensionality of the lattice map.
+
+        Returns:
+            int
+        """
+        return self.lattice.ndim
+
+    def normalize_sum(self, axis=None):
+        """Normalizes the values such that they sum up to one.
+
+        Args:
+            axis (int, optional): Specifies the axis of the values along which
+                to compute the norm. If axis is not provided the the complete
+                map will be normalized to sum up to one.
+
+        Returns:
+            LatticeMap: Lattice map object with normalized values.
+        """
+        # Initialize values
+        values = self.values
+
+        # Overall or directed normalization
+        if axis is None:    # Entire map sums up to one
+            # Check if the array is suitable to be normalized
+            norm = np.sum(values)
+            if np.isclose(norm, 0):
+                raise ValueError(msg.err1006)
+            values = values / norm
+        else:               # Directed normalization along axis
+            # Initialization
+            nnodes_dim = self.lattice.nnodes_dim
+            values = values.reshape(nnodes_dim, order=NP_ORDER)
+
+            # Check if the array is suitable to be normalized
+            norm = np.sum(values, axis=axis)
+            if np.any(np.isclose(norm, 0)):
+                raise ValueError(msg.err1006)
+
+            # Reshape the divisor
+            newshape = list(nnodes_dim)
+            newshape[axis] = 1
+            norm = np.reshape(norm, newshape=newshape)
+
+            values = values / norm
+            values = values.ravel(order=NP_ORDER)
+
+        return self.__class__(self.lattice, values)
 
     def slice(self, dim: int, ind: int):
         """Returns a slice where position `pos` is fixed in dimension `dim`.
@@ -292,18 +357,8 @@ class LatticeMap:
         slice_ = [slice(None) if i != dim else ind for i in range(self.ndim)]
         return self.__getitem__(tuple(slice_))
 
-    @property
-    def ndim(self):
-        """The dimensionality of the lattice map.
-
-        Returns:
-            int
-        """
-        return self.lattice.ndim
-
-    @classmethod
-    def from_txt(cls, file):
-        """Produces lattice map objects from .txt files.
+    def to_txt(self, file):
+        """Writes a lattice map objects to a .txt file.
 
         The structure of a latticemap text file is reported in the function
         :meth:`readfile_latticemap`.
@@ -312,25 +367,9 @@ class LatticeMap:
             file (str or pathlib.Path): File or filename.
 
         Returns:
-            LatticeMap: Lattice map from file.
+            None
         """
-        return readfile_latticemap(file)
-
-    def normalized(self, axis=None):
-        # TODO refactor this
-        # TODO unit-test this!!!
-        values = np.copy(self.values)
-        if not axis:
-            values /= np.sum(values)
-        else:
-            nnodes_dim = self.lattice.nnodes_dim
-            values = values.reshape(nnodes_dim, order=NP_ORDER)
-            norm = np.sum(values, axis=axis)
-            newshape = list(nnodes_dim)
-            newshape[axis] = 1
-            values /= np.reshape(norm, newshape=newshape)
-            values = values.ravel(order=NP_ORDER)
-        return self.__class__(self.lattice, values)
+        writefile_latticemap(self, file)
 
 
 # Methods
@@ -387,3 +426,52 @@ def readfile_nodes_values(file):
     values = np.asarray([val for vals in values for val in vals])
 
     return nodes, values
+
+
+def writefile_latticemap(map_, file):
+    """Writes a lattice map text file.
+
+    The structure of the lattice map file is as follows::
+
+            -----------------------------------------
+            |  <nnodes_dim>                         |
+            |  <nodes_x>                            |
+            |  <nodes_y>                            |
+            |  (<nodes_z>)                          |
+            |  values(x=0,...,n-1; y=0, (z=0))      |
+            |  values(x=0,...,n-1; y=1, (z=0))      |
+            |  ...                                  |
+            |  values(x=0,...,n-1; y=m-1, (z=0))    |
+            |  values(x=0,...,n-1; y=0, (z=1))      |
+            |  ...                                  |
+            |  values(x=0,...,n-1; y=0, (z=r-1))    |
+            -----------------------------------------
+
+    In the case of two-dimensional maps, the quantities in parentheses are
+    omitted.
+
+    Args:
+        map_ (LatticeMap): Lattice map to write.
+        file (str or pathlib.Path): File or filename.
+
+    Returns:
+        None
+    """
+    with open(file, 'w+') as lfile:
+        lattice = map_.lattice
+
+        # Write nnodes_dim
+        line = ' '.join(f'{n:d}' for n in lattice.nnodes_dim)
+        lfile.write(line + '\n')
+
+        # Write nodes
+        for nodes in lattice.nodes:
+            line = ' '.join(f'{n}' for n in nodes)
+            lfile.write(line + '\n')
+
+        # Write values
+        newshape = (lattice.nnodes_dim[0], -1)
+        values = np.reshape(map_.values, newshape, order=NP_ORDER).transpose()
+        for vals in values:
+            line = ' '.join(f'{v}' for v in vals)
+            lfile.write(line + '\n')

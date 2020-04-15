@@ -22,7 +22,7 @@ import os
 # Third party requirements
 import numpy as np
 # Local imports
-from pasam._settings import NP_SEED
+from pasam._settings import NP_SEED, NP_ORDER
 from pasam.lattice import Lattice, LatticeMap, readfile_latticemap
 
 # Constants
@@ -436,6 +436,21 @@ class TestLattice(unittest.TestCase):
 
         self.assertEqual(latticemap_true, latticemap_test)
 
+    def test_LatticeMap2D_normalize_sum(self):
+        nodes = [[0, 1, 2, 3, 4], [-3, -2, -1, 0]]
+        vals = np.random.rand(20)
+        map_ = LatticeMap(nodes, vals)
+        vals_nrm = map_.normalize_sum().values
+        self.assertTrue(np.allclose(vals_nrm, vals/np.sum(vals)))
+
+        vals_nrm = map_.normalize_sum(axis=0).values
+        sum_vals_nrm = np.sum(vals_nrm.reshape((5, 4), order=NP_ORDER), axis=0)
+        self.assertTrue(np.allclose(sum_vals_nrm, 1))
+
+        vals_nrm = map_.normalize_sum(axis=1).values
+        sum_vals_nrm = np.sum(vals_nrm.reshape((5, 4), order=NP_ORDER), axis=1)
+        self.assertTrue(np.allclose(sum_vals_nrm, 1))
+
     # Tests associated to LatticeMap3D
     def test_LatticeMap3D_gen(self):
         lattice = Lattice(self.nodes3D)
@@ -610,6 +625,25 @@ class TestLattice(unittest.TestCase):
         latticemap_test = readfile_latticemap(file)
 
         self.assertEqual(latticemap_true, latticemap_test)
+
+    def test_LatticeMap3D_normalize_sum(self):
+        nodes = [[0, 1, 2, 3, 4], [-3, -2, -1, 0], [10, 11, 12]]
+        vals = np.random.rand(60)
+        map_ = LatticeMap(nodes, vals)
+        vals_nrm = map_.normalize_sum().values
+        self.assertTrue(np.allclose(vals_nrm, vals/np.sum(vals)))
+
+        vals_nrm = map_.normalize_sum(axis=0).values
+        sum_vals_nrm = np.sum(vals_nrm.reshape((5, 4, 3), order=NP_ORDER), axis=0)
+        self.assertTrue(np.allclose(sum_vals_nrm, 1))
+
+        vals_nrm = map_.normalize_sum(axis=1).values
+        sum_vals_nrm = np.sum(vals_nrm.reshape((5, 4, 3), order=NP_ORDER), axis=1)
+        self.assertTrue(np.allclose(sum_vals_nrm, 1))
+
+        vals_nrm = map_.normalize_sum(axis=2).values
+        sum_vals_nrm = np.sum(vals_nrm.reshape((5, 4, 3), order=NP_ORDER), axis=2)
+        self.assertTrue(np.allclose(sum_vals_nrm, 1))
 
 
 if __name__ == '__main__':

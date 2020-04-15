@@ -48,9 +48,12 @@ import pasam as ps
 # that it is no longer possible to avoid the forbidden zone. Some 'problematic'
 # seeds are::
 #
-#   - trajectory = sampler(..., seed=155819)
-#   - trajectory = sampler(..., seed=98407703)
-#   - trajectory = sampler(..., seed=138667415).
+#   - file_energy = os.path.join(_LOC_DIR, 'data', 'prior_energy_180x90.txt')
+#     ...
+#   - sampler.set_prior_cond(conditions, validate=False)
+#     ...
+#   - trajectory = sampler(..., seed=2465392226)
+#   - trajectory = sampler(..., seed=3073228368).
 #
 # However, setting `inspect=True` avoids these kind of problems. See also the
 # example in `plot_prior_cond.py`.
@@ -109,3 +112,5 @@ plt.rc('ytick', labelsize=font_size)
 file_fig = os.path.join(_LOC_DIR, 'figures', 'trajectory.png')
 plt.savefig(file_fig)
 print(f'\nThe result is saved under {file_fig}')
+
+plt.show()
