@@ -53,8 +53,8 @@ import pasam as ps
 
 
 # Constants
-_LOC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _NSAMPLE = 10000
+_LOC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Computational lattice
 nodes = [np.arange(-179, 180, 2), np.arange(-89, 90, 2)]
@@ -66,10 +66,8 @@ order = 'random'
 sampler = ps.GantryDominant2D(lattice=lattice, ratio=ratio, order=order)
 
 # Set prior probability
-# TODO remove comment here
-# file_energy = os.path.join(_LOC_DIR, 'data', 'prior_energy_180x90.txt')
 file_energy = os.path.join(_LOC_DIR, 'data', 'prior_energy_sin_180x90.txt')
-prior_energy = ps.readfile_latticemap(file_energy)
+prior_energy = ps.LatticeMap.from_txt(file_energy)
 sampler.set_prior_prob(prior_energy, energy=True)
 
 # Set and check validity of prior conditioning
@@ -78,8 +76,6 @@ conditions = [file_cond]
 sampler.set_prior_cond(conditions, validate=True)
 
 # Sample Trajectories
-# TODO remove seed
-# TODO remove control figures in folder examples\figures
 trajectories = []
 for i, seed in enumerate(range(_NSAMPLE)):
     print(f'\rSample {i+1:4d} / {_NSAMPLE:4d}...', end='')
@@ -107,6 +103,7 @@ ax[0].set_title('Energy')
 # Plot prior probability
 map_ = (sampler.prior_cond * sampler.prior_prob).normalize_sum(axis=1)
 values = np.reshape(map_.values, lattice.nnodes_dim, order='F')
+
 ax[1].imshow(values.transpose(), **im_args)
 ax[1].set(xticks=np.arange(min_x, max_x+1, (max_x - min_x)//2),
           yticks=np.arange(min_y, max_y+1, (max_y - min_y)//2))
@@ -117,6 +114,7 @@ map_ = trajectories[0].to_latticemap(lattice, dtype='int')
 for traj in trajectories[1:]:
     map_ += traj.to_latticemap(lattice, dtype='int')
 values = np.reshape(map_.values, lattice.nnodes_dim, order='F')
+
 ax[2].imshow(values.transpose(), **im_args)
 ax[2].set(xticks=np.arange(min_x, max_x+1, (max_x - min_x)//2),
           yticks=np.arange(min_y, max_y+1, (max_y - min_y)//2))

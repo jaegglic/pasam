@@ -41,23 +41,6 @@ import matplotlib.pylab as plt
 # Local imports
 import pasam as ps
 
-# Without the inspection/adaption of the prior conditioning (c.f.
-# `sampler.set_prior_cond(conditions, inspect=False)`) the mechanical map does
-# interfere with the trajectory permission (c.f. `ratio`) because it might
-# happen that some trajectory points are so close to the blocked region such
-# that it is no longer possible to avoid the forbidden zone. Some 'problematic'
-# seeds are::
-#
-#   - file_energy = os.path.join(_LOC_DIR, 'data', 'prior_energy_180x90.txt')
-#     ...
-#   - sampler.set_prior_cond(conditions, validate=False)
-#     ...
-#   - trajectory = sampler(..., seed=2465392226)
-#   - trajectory = sampler(..., seed=3073228368).
-#
-# However, setting `inspect=True` avoids these kind of problems. See also the
-# example in `plot_prior_cond.py`.
-
 # Constants
 _LOC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -70,10 +53,8 @@ ratio = 2.0
 sampler = ps.GantryDominant2D(lattice=lattice, ratio=ratio, order='max_random')
 
 # Set prior probability
-# TODO remove comment here
-# file_energy = os.path.join(_LOC_DIR, 'data', 'prior_energy_180x90.txt')
 file_energy = os.path.join(_LOC_DIR, 'data', 'prior_energy_sin_180x90.txt')
-prior_energy = ps.readfile_latticemap(file_energy)
+prior_energy = ps.LatticeMap.from_txt(file_energy)
 sampler.set_prior_prob(prior_energy, energy=True)
 
 # Set and check validity of prior conditioning
@@ -82,9 +63,7 @@ conditions = [file_cond]
 sampler.set_prior_cond(conditions, validate=True)
 
 # Sample Trajectory
-# TODO remove seed
-# TODO remove control figures in folder examples\figures
-trajectory = sampler(seed=154586)
+trajectory = sampler()
 
 # Plot the Result
 map_ = sampler.prior_cond * sampler.prior_prob
@@ -112,5 +91,3 @@ plt.rc('ytick', labelsize=font_size)
 file_fig = os.path.join(_LOC_DIR, 'figures', 'trajectory.png')
 plt.savefig(file_fig)
 print(f'\nThe result is saved under {file_fig}')
-
-plt.show()

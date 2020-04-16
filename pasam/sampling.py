@@ -407,7 +407,6 @@ class GantryDominant2D(Sampler):
 
         return graph
 
-    # TODO Refactor `_sample_trajectory_points`
     def _compute_trajectory_points(self, conditions=None, validate=False):
         """Samples the trajectory points to generate a trajectory reaching
         through the gantry dimension of the lattice.
@@ -424,25 +423,21 @@ class GantryDominant2D(Sampler):
             list of tuples: List of sampled points
         """
         # Initialization
-        nodes = self._lattice.nodes
+        nodes_gantry = self._lattice.nodes[DIM_GANTRY]
+        nodes_table  = self._lattice.nodes[DIM_TABLE]
+        points = [None, ] * len(nodes_gantry)
 
-        # Compute (and eventually validate) the complete condition map
+        # Compute (and eventually validate) the global condition map
         if not conditions:
             conditions = []
         conditions.append(self.prior_cond)
         cond_map = self.compute_condition_map(conditions, validate)
 
-        # Cartesian product of the free nodes when DIM_GANTRY is fixed
-        free_nodes = [n for i, n in enumerate(nodes) if i != DIM_GANTRY]
-        lin_free_nodes = utl.cartesian_product(*free_nodes)
-
-        # Iteratively sample to points following a prescribed order
-        points = [None, ] * len(nodes[DIM_GANTRY])
-        for pos in self._sampling_position_order():
-
-            # Compute the distribution within the slice at position `pos`
-            prior_slice = self._prior_prob.slice(DIM_GANTRY, pos)
-            cond_slice = cond_map.slice(DIM_GANTRY, pos)
+        # Iteratively sample the points following a given gantry order
+        for ipos in self._sampling_indices():
+            # Compute the distribution in the slice at position `ipos`
+            prior_slice = self._prior_prob.slice(DIM_GANTRY, ipos)
+            cond_slice = cond_map.slice(DIM_GANTRY, ipos)
             distribution = prior_slice * cond_slice
 
             # Normalize the distribution values
@@ -450,27 +445,25 @@ class GantryDominant2D(Sampler):
                 distribution = distribution.normalize_sum()
             except (ValueError, TypeError) as e:
                 # Write logging file entry
-                logging.error(f'No possible path passage at pos={pos}')
+                logging.error(f'No possible path passage at ipos={ipos}')
                 # Save current permission map to a text file
                 map_ = self._prior_prob * cond_map
                 map_.to_txt(os.path.join(_LOC_FOLDER, LOG_MAP_NAME))
                 raise e
 
-            # Select trajectory point among the free nodes
-            ind = np.random.choice(len(lin_free_nodes), p=distribution.values)
-            pos_slice = lin_free_nodes[ind]
+            # Select table trajectory point according to the distribution
+            p_choice = distribution.values
+            pos_table = np.random.choice(nodes_table, p=p_choice)
 
-            # Generate new trajectory point
-            ndim = self._lattice.ndim
-            new_point = np.zeros(ndim)
-            new_point[DIM_GANTRY] = nodes[DIM_GANTRY][pos]
-            new_point[[i for i in range(ndim) if i != DIM_GANTRY]] = pos_slice
+            # Generate and set new trajectory point
+            new_point = [None, ] * self._lattice.ndim
+            new_point[DIM_GANTRY] = nodes_gantry[ipos]
+            new_point[DIM_TABLE] = pos_table
+            points[ipos] = tuple(new_point)
 
             # Update the restriction map by conditioning the new point
             cond_map *= self._cond_map_from_point(new_point)
 
-            # Embed the new point into the trajectory
-            points[pos] = tuple(new_point)
         return points
 
     def _cond_map_from_point(self, components):
@@ -544,7 +537,7 @@ class GantryDominant2D(Sampler):
 
         return linear_indices
 
-    def _sampling_position_order(self):
+    def _sampling_indices(self):
         """This method is used to define the order in which the trajectory
         points are sampled.
 

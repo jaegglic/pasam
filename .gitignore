@@ -118,4 +118,7 @@ venv
 .idea/jsLibraryMappings.xml
 
 # Logging file
-pasam/.log/
+pasam/.log/_plot_log_map.py
+
+# Issue files
+examples/GantryDominant2D/_plot_conditioning_issue.py
