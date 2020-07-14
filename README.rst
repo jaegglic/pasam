@@ -19,3 +19,5 @@ Documentation
 
 Find the sphinx documentation under
 https://pasam.readthedocs.io/en/latest/
+(NOTE 2020-07-14: Fixed some issues on readthedocs.org; RtD should show the
+correct version from 2020-07-15 on)
