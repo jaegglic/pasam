@@ -18,11 +18,15 @@ Unit tests for the utilities in `pasam.utils.py`.
 
 # Standard library
 import unittest
+import os
 # Third party requirements
 import numpy as np
 # Local imports
 import pasam.utils as utl
-from pasam._paths import PATH_TESTFILES
+
+# Constants
+_LOC = os.path.dirname(os.path.abspath(__file__))
+PATH_TESTFILES = os.path.join(_LOC, 'testfiles', '')
 
 
 class TestUtils(unittest.TestCase):
@@ -99,121 +103,6 @@ class TestUtils(unittest.TestCase):
         for ltest, ltrue in zip(lines_nempty_test, lines_nempty_true):
             self.assertEqual(ltest, ltrue)
 
-    def test_utils_readfile_latticemap2D(self):
-        nnodes_dim_true = [5, 6]
-        nodes_true = [[-1.5, 1.5, 5, 8, 9], [1, 2, 3, 4, 5, 6]]
-        map_vals_true = np.asarray([
-            [0.5, 0.5, 0.5, 0.5, 0.5],
-            [0.6, 0.6, 0.6, 0.6, 0.6],
-            [0.7, 0.7, 0.7, 0.7, 0.7],
-            [0.7, 0.7, 0.7, 0.7, 0.7],
-            [0.6, 0.6, 0.6, 0.6, 0.6],
-            [0.5, 0.5, 0.5, 0.5, 0.5],
-        ]).ravel(order='C')
-
-        file = PATH_TESTFILES + 'latticemap2d_simple.txt'
-        nnodes_dim_test, nodes_test, map_vals_test = utl.readfile_latticemap(file)
-
-        self.assertEqual(nnodes_dim_true, nnodes_dim_test)
-        self.assertEqual(nodes_true, nodes_test)
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
-    def test_utils_readfile_latticemap3D(self):
-        nnodes_dim_true = [2, 3, 2]
-        nodes_true = [[-1.5, 1.5], [5, 8, 9], [-2, 3]]
-        map_vals_true = np.asarray([
-            [0.5, 0.5],
-            [0.8, 0.8],
-            [0.1, 0.1],
-            [0.6, 0.6],
-            [0.9, 0.9],
-            [0.2, 0.2],
-        ]).ravel(order='C')
-
-        file = PATH_TESTFILES + 'latticemap3d_simple.txt'
-        nnodes_dim_test, nodes_test, map_vals_test = utl.readfile_latticemap(file)
-
-        self.assertEqual(nnodes_dim_true, nnodes_dim_test)
-        self.assertEqual(nodes_true, nodes_test)
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
-    def test_utils__ams_condition_point_to_bool_map(self):
-        nodes = [[-2, -1, 0, 1, 2], [-2, 0, 2]]
-
-        specs = {
-            'type': 'GantryDominant',
-            'ndim': 2,
-            'ratio_table_gantry_rotation': 1.0,
-        }
-        point = (0, 0)
-        map_vals_true = np.array([
-            1, 0, 0, 0, 1,
-            1, 1, 1, 1, 1,
-            1, 0, 0, 0, 1,
-        ], dtype=bool)
-        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-        point = (-2, -2)
-        map_vals_true = np.array([
-            1, 1, 1, 1, 1,
-            0, 0, 1, 1, 1,
-            0, 0, 0, 0, 1,
-        ], dtype=bool)
-        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
-        specs = {
-            'type': 'GantryDominant',
-            'ndim': 2,
-            'ratio_table_gantry_rotation': 2.0,
-        }
-        point = (0, 0)
-        map_vals_true = np.array([
-            1, 1, 0, 1, 1,
-            1, 1, 1, 1, 1,
-            1, 1, 0, 1, 1,
-        ], dtype=bool)
-        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-        point = (2, -2)
-        map_vals_true = np.array([
-            1, 1, 1, 1, 1,
-            1, 1, 1, 1, 0,
-            1, 1, 1, 0, 0,
-        ], dtype=bool)
-        map_vals_test = utl._ams_condition_point_to_bool_map(point, nodes, specs)
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
-    def test_utils_permission_map_from_condition_file_2d(self):
-        map_vals_true = np.array([
-            1, 1, 1,
-            1, 1, 1,
-            1, 1, 1,
-            1, 1, 0,
-            1, 0, 0,
-            0, 0, 0,
-            0, 0, 0,
-        ], dtype=bool)
-
-        file = PATH_TESTFILES + 'condmap2d_simple.txt'
-        map_vals_test = utl.permission_map_from_condition_file(file)
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
-    def test_utils_permission_map_from_condition_file_3d(self):
-        map_vals_true = np.array([
-            1, 1, 1,
-            0, 1, 0,
-            0, 0, 1,
-            0, 1, 0,
-            0, 0, 0,
-            1, 1, 0,
-            0, 1, 1,
-        ], dtype=bool)
-
-        file = PATH_TESTFILES + 'condmap3d_simple.txt'
-        map_vals_test = utl.permission_map_from_condition_file(file)
-        self.assertTrue(np.all(map_vals_true == map_vals_test))
-
     def test_utils_isincreasing(self):
         self.assertTrue(utl.isincreasing([1]))
         self.assertTrue(utl.isincreasing([1, 2, 3, 4, 5]))
@@ -224,21 +113,124 @@ class TestUtils(unittest.TestCase):
         self.assertFalse(utl.isincreasing([-0.11, -0.1100001, -0.110001]))
         self.assertFalse(utl.isincreasing([1, 2, 3, 4, 4]))
 
+    def test_utils_tensor_dot_lists_of_int(self):
+        lists = [[1., 2, 3]]
+        tensor_dot_test = utl.cartesian_product(*lists, order='F')
+        tensor_dot_true = [
+            (1,), (2,), (3,),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
 
-    # # Test plot
-    # def test_plot_utils__ams_condition_point_to_bool_map_(self):
-    #     import matplotlib.pyplot as plt
-    #     specs = {
-    #         'type': 'GantryDominant',
-    #         'ndim': 2,
-    #         'ratio_table_gantry_rotation': 0.5,
-    #     }
-    #     nodes = [np.arange(-179, 181, 2), np.arange(-89, 91, 2)]
-    #     point = (81, -21)
-    #     map_vals = utl._ams_condition_point_to_bool_map(point, nodes, specs)
-    #     plt.imshow(map_vals.reshape((180, 90), order='F').transpose()*1,
-    #                origin='lower')
-    #     plt.show()
+        tensor_dot_test = utl.cartesian_product(*lists, order='C')
+        tensor_dot_true = [
+            (1,), (2,), (3,),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        lists = [[1, 2, 3], [4, 5]]
+        tensor_dot_test = utl.cartesian_product(*lists, order='F')
+        tensor_dot_true = [
+            (1, 4), (2, 4), (3, 4),
+            (1, 5), (2, 5), (3, 5),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        tensor_dot_test = utl.cartesian_product(*lists, order='C')
+        tensor_dot_true = [
+            (1, 4), (1, 5),
+            (2, 4), (2, 5),
+            (3, 4), (3, 5),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        lists = [[1, 2, 3], [4, 5], [6, 7, 8]]
+        tensor_dot_test = utl.cartesian_product(*lists, order='F')
+        tensor_dot_true = [
+            (1, 4, 6), (2, 4, 6), (3, 4, 6),
+            (1, 5, 6), (2, 5, 6), (3, 5, 6),
+            (1, 4, 7), (2, 4, 7), (3, 4, 7),
+            (1, 5, 7), (2, 5, 7), (3, 5, 7),
+            (1, 4, 8), (2, 4, 8), (3, 4, 8),
+            (1, 5, 8), (2, 5, 8), (3, 5, 8),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        tensor_dot_test = utl.cartesian_product(*lists, order='C')
+        tensor_dot_true = [
+            (1, 4, 6), (1, 4, 7), (1, 4, 8),
+            (1, 5, 6), (1, 5, 7), (1, 5, 8),
+            (2, 4, 6), (2, 4, 7), (2, 4, 8),
+            (2, 5, 6), (2, 5, 7), (2, 5, 8),
+            (3, 4, 6), (3, 4, 7), (3, 4, 8),
+            (3, 5, 6), (3, 5, 7), (3, 5, 8),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        lists = [1, 2, 3]
+        with self.assertRaises(TypeError):
+            utl.cartesian_product(*lists, order='F')
+
+        lists = [np.array([1, 2, 3])]
+        tensor_dot_test = utl.cartesian_product(*lists)
+        tensor_dot_true = [
+            (1,), (2,), (3,),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        lists = [np.array([1, 2, 3]), np.array([4, 5])]
+        tensor_dot_test = utl.cartesian_product(*lists)
+        tensor_dot_true = [
+            (1, 4), (2, 4), (3, 4),
+            (1, 5), (2, 5), (3, 5),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+        lists = np.array([(1, 2, 3), (4, 5), (6, 7, 8)])
+        tensor_dot_test = utl.cartesian_product(*lists)
+        tensor_dot_true = [
+            (1, 4, 6), (2, 4, 6), (3, 4, 6),
+            (1, 5, 6), (2, 5, 6), (3, 5, 6),
+            (1, 4, 7), (2, 4, 7), (3, 4, 7),
+            (1, 5, 7), (2, 5, 7), (3, 5, 7),
+            (1, 4, 8), (2, 4, 8), (3, 4, 8),
+            (1, 5, 8), (2, 5, 8), (3, 5, 8),
+        ]
+        self.assertEqual(tensor_dot_true, tensor_dot_test)
+
+    def test_utils_within_conical_opening(self):
+        cntr = -1.5
+        dist = 2.75
+        ratio = 2
+        points = [
+            -4.25 * 1.000001,
+            -4.25 * 1.001,
+            cntr-dist*ratio/2,
+            cntr,
+            cntr+dist*ratio/2,
+            1.25 * 1.001,
+            1.25 * 1.000001,
+        ]
+        ind_true = np.array([True, False, True, True, True, False, True])
+
+        ind_test = utl.within_conical_opening(cntr, dist, ratio, points)
+        self.assertTrue(all(ind_true == ind_test))
+
+        cntr = 10
+        dist = 5
+        ratio = 1
+        points = [
+            7.5 * 0.999999,
+            7.5 * 0.999,
+            cntr-dist*ratio/2,
+            cntr,
+            cntr+dist*ratio/2,
+            12.5 * 1.001,
+            12.5 * 1.000001,
+        ]
+        ind_true = np.array([True, False, True, True, True, False, True])
+
+        ind_test = utl.within_conical_opening(cntr, dist, ratio, points)
+        self.assertTrue(all(ind_true == ind_test))
 
 
 if __name__ == '__main__':

@@ -117,5 +117,8 @@ venv
 .idea/vcs.xml
 .idea/jsLibraryMappings.xml
 
-# Folder where i put (so far) unused files
-_unused_yet
+# Logging file
+pasam/.log/_sampling_map.log.py
+
+# Issue files
+examples/GantryDominant2D/_plot_conditioning_issue.py

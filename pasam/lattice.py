@@ -1,17 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Definitions of the lattice grid elements and the associated objects.
-
-Classes
--------
-    - :class:`Condition`: (abstract) Parent class for each condition.
-    - :class:`ConditionFile`: Condition from a file.
-    - :class:`ConditionPoint`: Condition from a condition point.
-    - :class:`Lattice`: Lattice nodes in 1-, 2-, or 3-dimensions
-    - :class:`LatticeMap`: Value map associated to a lattice
-
-Methods
--------
-
+"""This module defines the lattice grid elements and the associated value maps.
 """
 
 # -------------------------------------------------------------------------
@@ -26,103 +14,18 @@ Methods
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # Standard library
-import abc
 import reprlib
 import numbers
 # Third party requirements
 import numpy as np
 # Local imports
 import pasam._messages as msg
+from pasam._settings import NP_ORDER, RLIB_MAXLIST
 import pasam.utils as utl
 
-# Constants and Variables
-_RLIB_MAXLIST = 3
+# Constants
 _rlib = reprlib.Repr()
-_rlib.maxlist = _RLIB_MAXLIST
-_NP_ORDER = 'F'
-
-
-# Condition Objects
-class Condition(abc.ABC):
-    """`Condition` defines an abstract parent class for restrictions in the
-    path sampling.
-
-    Notes:
-        Any sub-class of `Condition` must provide an implementation of
-
-            - :meth:`permission_map`
-    """
-
-    @abc.abstractmethod
-    def permission_map(self, lattice):
-        """Produces a permission map with permitted (``True``) and blocked
-        (``False``) lattice nodes.
-
-        Args:
-            lattice (Lattice): Object defining a lattice.
-
-        Returns:
-            LatticeMap: Lattice map issued from the condition.
-        """
-
-
-class ConditionFile(Condition):
-    """`ConditionFile` defines a condition from a .txt file.
-
-    Args:
-        file (str or pathlib.Path): File or filename.
-    """
-
-    def __init__(self, file):
-        self._file = file
-
-    def __repr__(self):
-        cls_name = type(self).__name__
-        return f'{cls_name}(file={self._file})'
-
-    def __str__(self):
-        return self.__repr__()
-
-    # Definition of the abstract method in `Condition`
-    def permission_map(self, lattice):
-        map_vals = utl.permission_map_from_condition_file(self._file)
-        return LatticeMap(lattice, map_vals)
-
-
-class ConditionPoint(Condition):
-    """`ConditionPoint` defines a condition point in a lattice grid.
-
-    Args:
-        components (array_like, shape=(n,)): Coordinate components.
-    """
-
-    def __eq__(self, other):
-        if isinstance(other, ConditionPoint):
-            return np.all(self._components == other._components)
-        elif isinstance(other, tuple) or isinstance(other, list):
-            return np.all(self._components == np.asarray(other))
-        return False
-
-    def __init__(self, components):
-        self._components = np.asarray(components)
-
-    def __len__(self):
-        return len(self._components)
-
-    def __repr__(self):
-        cls_name = type(self).__name__
-        components_repr = _rlib.repr(self._components)
-        return f'{cls_name}(components={components_repr})'
-
-    def __str__(self):
-        return self.__repr__()
-
-    # Definition of the abstract method in `Condition`
-    def permission_map(self, lattice):
-        point = self._components
-        nodes = lattice.nodes
-        map_vals = utl.permission_map_from_condition_point(point, nodes)
-        return LatticeMap(lattice, map_vals)
+_rlib.maxlist = RLIB_MAXLIST
 
 
 # Lattice and LatticeMap Objects
@@ -130,24 +33,48 @@ class Lattice:
     """`Lattice` defines the computational lattice.
 
     A lattice is defined by a one-, two-, or three-dimensional regular grid of
-    nodes. The nodes in one dimension is a set of strictly increasing values.
+    strictly increasing node values. The grid can then be considered as a
+    tensor product of all nodes, as for example::
+
+        Lattice(nodes=[[0, 2, 4, 6], [-1, 0, 1]])
+
+            +1  +-------+-------+-------+
+                |       |       |       |
+             0  +-------+-------+-------+
+                |       |       |       |
+            -1  +-------+-------+-------+
+                0       2       4       6
 
     Args:
-        nodes (list): Tensor product nodes.
+        nodes (list of array_like): Tensor product nodes.
 
     Attributes:
-        nodes (list): Tensor product nodes.
+        nodes (list of ndarray): Tensor product nodes.
 
     """
 
     def __eq__(self, other):
+        """Compares if all nodes are the same in both instances."""
         if isinstance(other, Lattice) and self.nnodes_dim == other.nnodes_dim:
-            nodes_eq = [np.all(n_sel == n_oth)
-                        for n_sel, n_oth in zip(self.nodes, other.nodes)]
-            return all(nodes_eq)
+            equal = [np.all(n_sel == n_oth)
+                     for n_sel, n_oth in zip(self.nodes, other.nodes)]
+            return all(equal)
         return False
 
+    def __getitem__(self, key):
+        """Defines the slicing of a lattice."""
+        if not isinstance(key, tuple) or len(key) != len(self.nodes):
+            raise ValueError(msg.err1004(self, key))
+        nodes = [n[k] for n, k in zip(self.nodes, key)]
+
+        # Reduce the singleton dimension
+        for inode, node in list(enumerate(nodes))[::-1]:
+            if isinstance(node, numbers.Number):
+                del nodes[inode]
+        return self.__class__(nodes)
+
     def __init__(self, nodes):
+        # List of strictly increasing ndarrays
         nodes = list(np.asarray(n) for n in nodes)
         if not all(utl.isincreasing(n, strict=True) for n in nodes):
             raise ValueError(msg.err1001(nodes))
@@ -160,6 +87,46 @@ class Lattice:
 
     def __str__(self):
         return self.__repr__()
+
+    def indices_from_point(self, components):
+        """Returns the indices for the nearest node in each direction.
+
+        Args:
+            components (array_like, shape=(n,)): Components of point.
+
+        Returns:
+            tuple: Indices of closest node.
+        """
+        if len(components) != self.ndim:
+            raise ValueError(msg.err1005(self.ndim, len(components)))
+
+        ind = [np.argmin(np.abs(nodes - comp))
+               for nodes, comp in zip(self.nodes, components)]
+        return tuple(ind)
+
+    def linear_index_from_point(self, components):
+        """Returns the linear index for the nearest node in the grid.
+
+        Args:
+            components (array_like, shape=(n,)): Components of point.
+
+        Returns:
+            int: Linear index of closest node.
+        """
+        linear_indices = self.linear_indices()
+        ind = self.indices_from_point(components)
+        return linear_indices[ind]
+
+    def linear_indices(self):
+        """Returns the array of linear indices.
+
+        The array has the shape self.nnodes_dim
+
+        Returns:
+            ndarray, shape=self.nnodes_dim: Linear indices.
+        """
+        linear_indices = np.arange(self.nnodes)
+        return linear_indices.reshape(self.nnodes_dim, order=NP_ORDER)
 
     @property
     def ndim(self):
@@ -192,18 +159,42 @@ class Lattice:
 class LatticeMap:
     """`LatticeMap` defines a value map associated to a :class:`Lattice`.
 
+    A lattice map is the combination of a lattice and a value map associated to
+    in a one-, two-, or three-dimensional regular grid of nodes:
+    The grid can then be considered as a tensor product of all nodes, as for
+    example::
+
+        nodes = [[0, 2, 4, 6], [-1, 0, 1]]
+        values = [
+            0.1, 0,2, 0.3, 0.4,
+            0.5, 0.6, 0.7, 0.8,
+            0.9, 1.0, 1.1, 1.2,
+        ]
+        LatticeMap(nodes, values)
+
+            +1 0.9-----1.0-----1.1-----1.2
+                |       |       |       |
+             0 0.5-----0.6-----0.7-----0.8
+                |       |       |       |
+            -1 0.1-----0.2-----0.3-----0.4
+                0       2       4       6
+
+    The index order is Fortran-like such that it first iterates along the
+    lowest dimension.
+
     Args:
-        lattice (Lattice): Object defining a lattice.
-        map_vals (array_like, shape=(n,)): Map values associated to the lattice
+        lattice (Lattice or list of array_like): Object defining the
+            computational lattice.
+        values (array_like, shape=(n,)): Map values associated to the lattice
             nodes.
-        dtype (data-type, optional): The desired data-type for the map_values.
+        dtype (data-type, optional): The desired data-type for the map values.
             If not given, then the type will be determined as the minimum
             requirement by `numpy`.
 
     Attributes:
-        lattice (Lattice): Object defining a lattice
-        map_vals (ndarray, shape=(n,)): Map values associated to the lattice
-            nodes
+        lattice (Lattice): Object defining the computational lattice.
+        values (ndarray, shape=(n,)): Map values associated to the lattice
+            nodes.
     """
 
     def __add__(self, other):
@@ -211,34 +202,55 @@ class LatticeMap:
         `number.Number`"""
         if isinstance(other, LatticeMap):
             if self.lattice is other.lattice or self.lattice == other.lattice:
-                return LatticeMap(self.lattice, self.map_vals + other.map_vals)
+                return LatticeMap(self.lattice, self.values + other.values)
             else:
-                raise ValueError(msg.err1002)
+                raise ValueError(msg.err1002('+'))
 
         elif isinstance(other, numbers.Number):
-            return LatticeMap(self.lattice, self.map_vals + other)
+            return LatticeMap(self.lattice, self.values + other)
 
         return NotImplemented
 
     def __eq__(self, other):
-        """Equality is based on `lattice` and `map_vals`."""
+        """Equality is based on `lattice` and `values`."""
         if isinstance(other, LatticeMap) and self.lattice == other.lattice:
-            return np.all(self.map_vals == other.map_vals)
+            return np.all(self.values == other.values)
         return False
 
-    def __init__(self, lattice, map_vals, dtype=None):
-        map_vals = np.asarray(map_vals, dtype=dtype).ravel(order=_NP_ORDER)
-        if lattice.nnodes != len(map_vals):
-            raise ValueError(msg.err1003(lattice.nnodes, len(map_vals)))
+    def __getitem__(self, key):
+        """Uses the slicing of numpy for the values."""
+        lattice = self.lattice[key]
+        nnodes_dim = self.lattice.nnodes_dim
+        values = self.values.reshape(nnodes_dim, order=NP_ORDER)
+        values = values[key].ravel(order=NP_ORDER)
+        return self.__class__(lattice=lattice, values=values)
 
+    def __init__(self, lattice, values, dtype=None):
+        # Support both:
+        # - LatticeMap(lattice, values)
+        # - LatticeMap(nodes, values)
+        if not isinstance(lattice, Lattice):
+            lattice = Lattice(lattice)
+
+        # Transform values to a one-dimensional ndarray
+        values = np.asarray(values, dtype=dtype).ravel(order=NP_ORDER)
+        if lattice.nnodes != len(values):
+            raise ValueError(msg.err1003(lattice.nnodes, len(values)))
         self.lattice = lattice
-        self.map_vals = map_vals
+        self.values = values
 
     def __mul__(self, other):
-        """Supports multiplication by ``numbers.Number``."""
-        if isinstance(other, numbers.Number):
-            map_vals = self.map_vals * other
-            return LatticeMap(self.lattice, map_vals)
+        """Supports `LatticeMap` * `LatticeMap` as well as `LatticeMap` *
+        `numbers.Number`.
+        """
+        if isinstance(other, LatticeMap):
+            if self.lattice is other.lattice or self.lattice == other.lattice:
+                return LatticeMap(self.lattice, self.values * other.values)
+            else:
+                raise ValueError(msg.err1002('*'))
+
+        elif isinstance(other, numbers.Number):
+            return LatticeMap(self.lattice, self.values * other)
         return NotImplemented
 
     def __radd__(self, other):
@@ -246,15 +258,41 @@ class LatticeMap:
 
     def __repr__(self):
         cls_name = type(self).__name__
-        map_vals_repr = _rlib.repr(self.map_vals)
+        values_repr = _rlib.repr(self.values)
         return f'{cls_name}(lattice={repr(self.lattice)}, ' \
-               f'map_vals={map_vals_repr})'
+               f'values={values_repr})'
 
     def __rmul__(self, other):
         return self * other
 
     def __str__(self):
         return self.__repr__()
+
+    @classmethod
+    def from_txt(cls, file):
+        """Produces a lattice map object from a .txt file.
+
+        The structure of a latticemap text file is reported in the function
+        :meth:`readfile_latticemap`.
+
+        Args:
+            file (str or pathlib.Path): File or filename.
+
+        Returns:
+            LatticeMap: Lattice map from file.
+        """
+        return readfile_latticemap(file)
+
+    def indices_from_point(self, components):
+        """Returns the indices for the nearest node in the lattice.
+
+        Args:
+            components (array_like, shape=(n,)): Components of point.
+
+        Returns:
+            tuple: Indices of closest node.
+        """
+        return self.lattice.indices_from_point(components)
 
     @property
     def ndim(self):
@@ -265,56 +303,175 @@ class LatticeMap:
         """
         return self.lattice.ndim
 
-    @classmethod
-    def from_txt(cls, file, lattice=None):
-        """Produces lattice map objects from .txt files.
+    def normalize_sum(self, axis=None):
+        """Normalizes the values such that they sum up to one.
+
+        Args:
+            axis (int, optional): Specifies the axis of the values along which
+                to compute the norm. If axis is not provided the the complete
+                map will be normalized to sum up to one.
+
+        Returns:
+            LatticeMap: Lattice map object with normalized values.
+        """
+        # Initialize values
+        values = self.values
+
+        # Overall or directed normalization
+        if axis is None:    # Entire map sums up to one
+            # Check if the array is suitable to be normalized
+            norm = np.sum(values)
+            if np.isclose(norm, 0):
+                raise ValueError(msg.err1006)
+            values = values / norm
+        else:               # Directed normalization along axis
+            # Initialization
+            nnodes_dim = self.lattice.nnodes_dim
+            values = values.reshape(nnodes_dim, order=NP_ORDER)
+
+            # Check if the array is suitable to be normalized
+            norm = np.sum(values, axis=axis)
+            if np.any(np.isclose(norm, 0)):
+                raise ValueError(msg.err1006)
+
+            # Reshape the divisor
+            newshape = list(nnodes_dim)
+            newshape[axis] = 1
+            norm = np.reshape(norm, newshape=newshape)
+
+            values = values / norm
+            values = values.ravel(order=NP_ORDER)
+
+        return self.__class__(self.lattice, values)
+
+    def slice(self, dim: int, ind: int):
+        """Returns a slice where position `pos` is fixed in dimension `dim`.
+
+        Args:
+            dim (int): Static dimension for the slice.
+            ind (int): Index of slicing position.
+
+        Returns:
+            LatticeMap: Slice of `self`.
+        """
+        slice_ = [slice(None) if i != dim else ind for i in range(self.ndim)]
+        return self.__getitem__(tuple(slice_))
+
+    def to_txt(self, file):
+        """Writes a lattice map objects to a .txt file.
 
         The structure of a latticemap text file is reported in the function
-        :func:`pasam.utils.readfile_ams_latticemap`.
+        :meth:`readfile_latticemap`.
 
         Args:
             file (str or pathlib.Path): File or filename.
-            lattice (Lattice, optional): Object defining a lattice.
 
         Returns:
-            LatticeMap: Object defining a lattice map
+            None
         """
-        _, nodes, map_vals = utl.readfile_latticemap(file)
-        lattice_from_file = Lattice(nodes)
-
-        if not lattice:
-            lattice = lattice_from_file
-        elif lattice != lattice_from_file:
-            raise ValueError(msg.err1000(file, lattice))
-
-        return cls(lattice, map_vals)
+        writefile_latticemap(self, file)
 
 
-if __name__ == '__main__':
-    x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-    y = [4, 5, 6, 7, 8, 9, 10.5]
-    z = [-1, 0, 1]
+# Methods
+def readfile_latticemap(file) -> LatticeMap:
+    """Reads a lattice map text file.
 
-    lattice_2D = Lattice([x, y])
-    print('\n2D lattice:')
-    print(repr(lattice_2D))
+    The structure of the lattice map file is as follows::
 
-    lattice_3D = Lattice([x, y, z])
-    print('\n3D lattice:')
-    print(repr(lattice_3D))
+            -----------------------------------------
+            |  <nnodes_dim>                         |
+            |  <nodes_x>                            |
+            |  <nodes_y>                            |
+            |  (<nodes_z>)                          |
+            |  values(x=0,...,n-1; y=0, (z=0))      |
+            |  values(x=0,...,n-1; y=1, (z=0))      |
+            |  ...                                  |
+            |  values(x=0,...,n-1; y=m-1, (z=0))    |
+            |  values(x=0,...,n-1; y=0, (z=1))      |
+            |  ...                                  |
+            |  values(x=0,...,n-1; y=0, (z=r-1))    |
+            -----------------------------------------
 
-    map_vals = np.ones(lattice_2D.nnodes)
-    latticemap_2D = LatticeMap(lattice_2D, map_vals)
-    print('\n2D latticemap:')
-    print(repr(latticemap_2D))
+    In the case of two-dimensional maps, the quantities in parentheses are
+    omitted.
 
-    map_vals = np.ones(lattice_3D.nnodes)
-    latticemap_3D = LatticeMap(lattice_3D, map_vals)
-    print('\n3D latticemap:')
-    print(repr(latticemap_3D))
+    Args:
+        file (str or pathlib.Path): File or filename.
 
-    from pasam._paths import PATH_TESTFILES
-    file = PATH_TESTFILES + 'latticemap2d_float.txt'
-    latticemap_from_txt = LatticeMap.from_txt(file)
-    print('\nlatticemap from .txt')
-    print(repr(latticemap_from_txt))
+    Returns:
+        LatticeMap: Lattice map from file.
+    """
+    nodes, values = readfile_nodes_values(file)
+    return LatticeMap(nodes, values)
+
+
+def readfile_nodes_values(file):
+    """Similar as :meth:`readfile_latticemap` but directly returns the nodes
+    and the values.
+    """
+    lines = utl.readlines_(file, remove_blank_lines=True)
+
+    # Number of nodes per dimension (defined in lines[0])
+    nnodes_dim = utl.findall_num_in_str(lines[0])
+    ndim = len(nnodes_dim)
+
+    # Definition of the lattice (defined in lines[1:ndim+1])
+    lines_nodes, lines_values = lines[1:ndim + 1], lines[ndim + 1:]
+    nodes = [utl.findall_num_in_str(line) for line in lines_nodes]
+
+    # Definition of the values (defined in lines[ndim+1:])
+    values = [utl.findall_num_in_str(line) for line in lines_values]
+
+    # Flatten the list of values
+    values = np.asarray([val for vals in values for val in vals])
+
+    return nodes, values
+
+
+def writefile_latticemap(map_, file):
+    """Writes a lattice map text file.
+
+    The structure of the lattice map file is as follows::
+
+            -----------------------------------------
+            |  <nnodes_dim>                         |
+            |  <nodes_x>                            |
+            |  <nodes_y>                            |
+            |  (<nodes_z>)                          |
+            |  values(x=0,...,n-1; y=0, (z=0))      |
+            |  values(x=0,...,n-1; y=1, (z=0))      |
+            |  ...                                  |
+            |  values(x=0,...,n-1; y=m-1, (z=0))    |
+            |  values(x=0,...,n-1; y=0, (z=1))      |
+            |  ...                                  |
+            |  values(x=0,...,n-1; y=0, (z=r-1))    |
+            -----------------------------------------
+
+    In the case of two-dimensional maps, the quantities in parentheses are
+    omitted.
+
+    Args:
+        map_ (LatticeMap): Lattice map to write.
+        file (str or pathlib.Path): File or filename.
+
+    Returns:
+        None
+    """
+    with open(file, 'w+') as lfile:
+        lattice = map_.lattice
+
+        # Write nnodes_dim
+        line = ' '.join(f'{n:d}' for n in lattice.nnodes_dim)
+        lfile.write(line + '\n')
+
+        # Write nodes
+        for nodes in lattice.nodes:
+            line = ' '.join(f'{n}' for n in nodes)
+            lfile.write(line + '\n')
+
+        # Write values
+        newshape = (lattice.nnodes_dim[0], -1)
+        values = np.reshape(map_.values, newshape, order=NP_ORDER).transpose()
+        for vals in values:
+            line = ' '.join(f'{v}' for v in vals)
+            lfile.write(line + '\n')
