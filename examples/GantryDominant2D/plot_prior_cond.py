@@ -101,5 +101,3 @@ ax[2].set_title('ratio = 2.0')
 file_fig = os.path.join(_LOC_DIR, 'figures', 'prior_cond.png')
 plt.savefig(file_fig)
 print(f'\nThe result is saved under {file_fig}')
-
-plt.show()

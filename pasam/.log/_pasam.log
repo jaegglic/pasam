@@ -1,6 +1,23 @@
 INFO:root:Start Path Sampling
-INFO:root:Numpy seed is 2465392226
-ERROR:root:No possible path passage at ipos=5
+INFO:root:Numpy seed is 0
+INFO:root:Start Path Sampling
+INFO:root:Numpy seed is 1
+INFO:root:Start Path Sampling
+INFO:root:Numpy seed is 2
+INFO:root:Start Path Sampling
+INFO:root:Numpy seed is 3
+INFO:root:Start Path Sampling
+INFO:root:Numpy seed is 4
+INFO:root:Start Path Sampling
+INFO:root:Numpy seed is 5
+INFO:root:Start Path Sampling
+INFO:root:Numpy seed is 6
+INFO:root:Start Path Sampling
+INFO:root:Numpy seed is 7
+INFO:root:Start Path Sampling
+INFO:root:Numpy seed is 8
+INFO:root:Start Path Sampling
+INFO:root:Numpy seed is 9
 DEBUG:matplotlib.font_manager:findfont: Matching :family=sans-serif:style=normal:variant=normal:weight=normal:stretch=normal:size=12.0.
 DEBUG:matplotlib.font_manager:findfont: score(<Font 'DejaVu Sans Mono' (DejaVuSansMono-Oblique.ttf) oblique normal 400 normal>) = 11.05
 DEBUG:matplotlib.font_manager:findfont: score(<Font 'DejaVu Serif' (DejaVuSerif-Bold.ttf) normal normal bold normal>) = 10.335

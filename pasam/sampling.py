@@ -700,7 +700,7 @@ class Trajectory:
             |  points[0]            |
             |  points[1]            |
             |     ...               |
-            |  points[n-1]          |
+            |  points[-1]           |
             -------------------------
 
         Args:
@@ -721,7 +721,7 @@ class Trajectory:
             |  points[0]            |
             |  points[1]            |
             |     ...               |
-            |  points[n-1]          |
+            |  points[-1]           |
             -------------------------
 
         Args:

@@ -53,7 +53,7 @@ import pasam as ps
 
 
 # Constants
-_NSAMPLE = 10000
+_NSAMPLE = 10
 _LOC_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Computational lattice
@@ -72,7 +72,7 @@ sampler.set_prior_prob(prior_energy, energy=True)
 
 # Set and check validity of prior conditioning
 file_cond = os.path.join(_LOC_DIR, 'data', 'restrictions_180x90.txt')
-conditions = [file_cond]
+conditions = [file_cond, (1, 1), (-91, 45), (91, -45)]
 sampler.set_prior_cond(conditions, validate=True)
 
 # Sample Trajectories
@@ -101,7 +101,8 @@ ax[0].set(xticks=np.arange(min_x, max_x+1, (max_x - min_x)//2),
 ax[0].set_title('Energy')
 
 # Plot prior probability
-map_ = (sampler.prior_cond * sampler.prior_prob).normalize_sum(axis=1)
+# map_ = (sampler.prior_cond * sampler.prior_prob).normalize_sum(axis=1)
+map_ = (sampler.prior_cond * sampler.prior_prob)
 values = np.reshape(map_.values, lattice.nnodes_dim, order='F')
 
 ax[1].imshow(values.transpose(), **im_args)
