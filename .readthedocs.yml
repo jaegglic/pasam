@@ -16,9 +16,10 @@ sphinx:
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
-  version: 3.6
-  setup_py_install: true    # When true install into virtualenv using setup.py
-  pip_install: true         # When true, install your project into virtualenv
+  version: 3.7
+   install:
+      method: setuptools
+      path: .
 
 # VCS submodules configuration
 submodules:
