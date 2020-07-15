@@ -6,6 +6,9 @@ PaSam is a python3 implementation of a path sampling tool. It's primary
 application is to characterize delivery schemes in dynamic trajectory
 radiotherapy (DTRT).
 
+PS:
+116 111 101 103 103 101 108 111 109 097 116 032 105 115 032 102 117 110 013 010
+
 
 Documentation
 -------------
@@ -17,5 +20,5 @@ Documentation
     :target: https://travis-ci.com/jaegglic/pasam
     :alt: Build Status
 
-Find the sphinx documentation under
-https://pasam.readthedocs.io/en/latest/
+The documentation will soon be available on `readthedocs.org`. In the meantime
+you can use `docs/html/index.html`.
