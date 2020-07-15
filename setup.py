@@ -22,7 +22,7 @@ def test_suite():
 setup(
     name='pasam',
     packages=find_namespace_packages(),
-    version='0.1.6.1',
+    version='0.1.7',
     description='Path sampling package',
     long_description=long_description,
     long_description_content_type="text/x-rst",
@@ -31,10 +31,10 @@ setup(
     author_email='stefanie.marti@insel.ch, christoph.jaeggli@insel.ch',
     url='https://github.com/jaegglic/pasam',
     keywords=['sampling', 'radiotherapy', 'delivery path'],
-    python_requires='>=3.6',
-    install_requires=[
-        f'numpy=={_NUMPY_VERSION}',
-    ],
+    python_requires='>=3.7',
+    # install_requires=[                # C-dependencies cause issues in RtD
+    #     f'numpy=={_NUMPY_VERSION}',
+    # ],
     test_suite='setup.test_suite',
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -43,7 +43,6 @@ setup(
         'Natural Language :: English',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',

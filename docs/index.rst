@@ -14,7 +14,6 @@ treatment paths in dynamic trajectory radiotherapy (DTRT).
    :maxdepth: 2
    :caption: Contents:
 
-   guide.rst
    api.rst
 
 

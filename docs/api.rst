@@ -2,10 +2,8 @@
 API of the PaSam Package
 ========================
 
-The :mod:`pasam` package is organized into the following sup-modules
-
-* :ref:`lattice_reference`: Defines the computational grid and the associate map
-
+The :mod:`pasam` package is organized into the modules 'Lattice', 'Sampling',
+and 'Utilities':
 
 Lattice
 =======

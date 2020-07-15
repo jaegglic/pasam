@@ -13,7 +13,8 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
-
+# mock C-dependencies (c.f. https://docs.readthedocs.io/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules)
+autodoc_mock_imports = ['numpy']
 
 # -- Project information -----------------------------------------------------
 
@@ -22,7 +23,7 @@ copyright = '2020, Stefanie Marti, Christoph Jaeggli'
 author = 'Stefanie Marti, Christoph Jaeggli'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = '0.1.7'
 
 
 # -- General configuration ---------------------------------------------------
@@ -64,8 +65,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
-# html_theme = 'classic'
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+if on_rtd:
+    html_theme = 'default'
+else:
+    html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
