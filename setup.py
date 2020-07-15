@@ -32,9 +32,12 @@ setup(
     url='https://github.com/jaegglic/pasam',
     keywords=['sampling', 'radiotherapy', 'delivery path'],
     python_requires='>=3.7',
-    # install_requires=[                # C-dependencies cause issues in RtD
-    #     f'numpy=={_NUMPY_VERSION}',
-    # ],
+    # C-dependencies must be removed (and mocked in docs/conf.py) for the
+    # documentation on readthedocs.org. However, if we want to simultaneously
+    # use CI on travis-ci.com, the dependencies must be there
+    install_requires=[                # C-dependencies cause issues in RtD
+        f'numpy=={_NUMPY_VERSION}',
+    ],
     test_suite='setup.test_suite',
     classifiers=[
         'Development Status :: 4 - Beta',
