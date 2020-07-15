@@ -32,7 +32,7 @@ setup(
     url='https://github.com/jaegglic/pasam',
     keywords=['sampling', 'radiotherapy', 'delivery path'],
     python_requires='>=3.7',
-    # install_requires=[
+    # install_requires=[                # C-dependencies cause issues in RtD
     #     f'numpy=={_NUMPY_VERSION}',
     # ],
     test_suite='setup.test_suite',
