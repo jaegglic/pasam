@@ -18,7 +18,7 @@ sphinx:
 python:
   version: 3.7
   install:
-    - method: setuptools
+    - method: setuptools    # Use setup.py file
       path: .
 
 # VCS submodules configuration

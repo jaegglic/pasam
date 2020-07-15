@@ -32,9 +32,9 @@ setup(
     url='https://github.com/jaegglic/pasam',
     keywords=['sampling', 'radiotherapy', 'delivery path'],
     python_requires='>=3.7',
-    install_requires=[
-        f'numpy=={_NUMPY_VERSION}',
-    ],
+    # install_requires=[
+    #     f'numpy=={_NUMPY_VERSION}',
+    # ],
     test_suite='setup.test_suite',
     classifiers=[
         'Development Status :: 4 - Beta',

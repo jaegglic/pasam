@@ -13,7 +13,8 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
-
+# mock C-dependencies (c.f. https://docs.readthedocs.io/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules)
+autodoc_mock_imports = ['numpy']
 
 # -- Project information -----------------------------------------------------
 
