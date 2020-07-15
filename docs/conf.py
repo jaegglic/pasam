@@ -23,7 +23,7 @@ copyright = '2020, Stefanie Marti, Christoph Jaeggli'
 author = 'Stefanie Marti, Christoph Jaeggli'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.6.1'
+release = '0.1.7'
 
 
 # -- General configuration ---------------------------------------------------

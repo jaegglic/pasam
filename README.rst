@@ -20,5 +20,4 @@ Documentation
     :target: https://travis-ci.com/jaegglic/pasam
     :alt: Build Status
 
-The documentation will soon be available on `readthedocs.org`. In the meantime
-you can use `docs/html/index.html`.
+Find the documentation under https://pasam.readthedocs.io/en/latest/
